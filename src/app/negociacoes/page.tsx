@@ -69,16 +69,17 @@ export default function NegociacoesPage() {
   };
 
   const carregarObraInfo = async () => {
-    if (!obraSelecionada) {
-      setObraInfo(null);
-      return;
-    }
-    setObraInfo({
-      nome: obraSelecionada.nome,
-      endereco: obraSelecionada.endereco || '',
-      responsavel_tecnico: obraSelecionada.responsavel_tecnico || ''
-    });
-  };
+    try {
+      if (!obraSelecionada) {
+        setObraInfo(null);
+        return;
+      }
+      setObraInfo({
+        nome: obraSelecionada.nome,
+        endereco: obraSelecionada.endereco || '',
+        responsavel_tecnico: obraSelecionada.responsavel_tecnico || ''
+      });
+    } catch (error) {
       console.error('Erro ao carregar informações da obra:', error);
     }
   };
