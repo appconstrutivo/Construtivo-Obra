@@ -1,0 +1,83 @@
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { createMiddlewareClient } from '@/lib/supabaseServer';
+
+export async function middleware(request: NextRequest) {
+  const response = NextResponse.next();
+  const path = request.nextUrl.pathname;
+
+  // Recursos estáticos que não precisam de autenticação
+  const isStaticResource = path.match(/\.(js|css|png|jpg|jpeg|svg|ico|webp)$/i);
+  if (isStaticResource) {
+    return response;
+  }
+
+  // Se for uma rota de API, permitir acesso
+  if (path.startsWith('/api/')) {
+    return response;
+  }
+
+  // Rotas de autenticação que não precisam de proteção
+  const authRoutes = ['/login', '/cadastro', '/recuperar-senha', '/redefinir-senha', '/cadastro/confirmacao'];
+  const isAuthRoute = authRoutes.some(route => path.startsWith(route));
+
+  try {
+    const supabase = createMiddlewareClient(request, response);
+    
+    // Verificar se o usuário está autenticado
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
+    console.log(`[Middleware] Rota: ${path}`);
+    console.log(`[Middleware] É rota de auth: ${isAuthRoute}`);
+    console.log(`[Middleware] Sessão encontrada: ${session ? 'SIM' : 'NÃO'}`);
+    console.log(`[Middleware] Erro na sessão: ${error ? error.message : 'NENHUM'}`);
+    
+    if (session?.user) {
+      console.log(`[Middleware] Usuário logado: ${session.user.email}`);
+    }
+    
+    // Se há erro ou não há sessão
+    if (error || !session) {
+      // Se está tentando acessar rota protegida, redirecionar para login
+      if (!isAuthRoute) {
+        console.log(`[Middleware] ❌ Redirecionando ${path} para /login - sem sessão válida`);
+        return NextResponse.redirect(new URL('/login', request.url));
+      }
+      // Se está em rota de auth, permitir acesso
+      console.log(`[Middleware] ✅ Permitindo acesso à rota de auth: ${path}`);
+      return response;
+    }
+
+    // Se há sessão válida e está tentando acessar rota de auth, redirecionar para dashboard
+    // EXCETO para /redefinir-senha, que precisa permitir acesso mesmo com sessão (para criar senha após convite)
+    if (session && isAuthRoute && path !== '/redefinir-senha') {
+      console.log(`[Middleware] ✅ Usuário autenticado em ${path}, redirecionando para /dashboard`);
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+    
+    // Permitir acesso a /redefinir-senha mesmo com sessão (para criar senha após convite)
+    if (session && path === '/redefinir-senha') {
+      console.log(`[Middleware] ✅ Permitindo acesso a /redefinir-senha mesmo com sessão (criação de senha)`);
+      return response;
+    }
+
+    // Continuar com a requisição normalmente
+    console.log(`[Middleware] ✅ Permitindo acesso à rota protegida: ${path}`);
+    return response;
+    
+  } catch (error) {
+    console.error('[Middleware] ❌ Erro no middleware:', error);
+    // Em caso de erro, permitir acesso a rotas de auth, redirecionar outras para login
+    if (isAuthRoute) {
+      return response;
+    }
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+}
+
+// Configuração simplificada
+export const config = {
+  matcher: [
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|ico|webp)$).*)',
+  ],
+}; 

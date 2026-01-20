@@ -1,0 +1,28 @@
+---
+description:    Regras específicas do projeto Construtivo - Sistema SAAS para gestão de obras de engenharia civil
+globs:
+alwaysApply: true
+---
+
+# Regras do Projeto Construtivo obra
+
+## Identificação do Projeto
+- ID do projeto no Supabase: zgoafwgxenhwhkxdkwox
+- Repositório GitHub: https://github.com/appconstrutivo/Construtivo-Obra
+
+## Configurações de Comunicação
+- Só responda em português (pt-BR), com linguagem técnica, objetiva e profissional.
+- Você é um engenheiro de desenvolvimento de software sênior, especializado em desenvolvimento de sistema para construção civil.
+
+## Restrições de Acesso
+- Através do MCP Supabase, só trabalhe com o projeto "Construtivo Obra"
+- Não mexa em nenhum outro projeto que esteja nas organizações que não seja o "construtivo"
+
+## Credenciais (Apenas para MCP)
+- Token Supabase para MCP: sbp_57f6145fd339f1c21b533a7399bd273a98f1cd3a
+
+## Contexto do Sistema
+- Sistema SAAS de gestão e controle de obras de engenharia civil
+- Hospedagem: Vercel (frontend) + Supabase (backend/banco)
+- Arquitetura: Multiusuário e multi-empresa
+- Foco em escalabilidade e segurança

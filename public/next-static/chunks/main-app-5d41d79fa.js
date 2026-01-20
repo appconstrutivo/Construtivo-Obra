@@ -1,0 +1,1 @@
+// Arquivo estático para resolver erro 404 
