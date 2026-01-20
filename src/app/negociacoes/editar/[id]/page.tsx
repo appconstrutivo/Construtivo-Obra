@@ -203,8 +203,8 @@ export default function EditarNegociacaoPage({ params }: any) {
           const obraPrincipal = obrasData[0];
           setObraInfo({
             nome: obraPrincipal.nome,
-            endereco: obraPrincipal.endereco,
-            responsavel_tecnico: obraPrincipal.responsavel_tecnico
+            endereco: obraPrincipal.endereco || '',
+            responsavel_tecnico: obraPrincipal.responsavel_tecnico || ''
           });
         }
       } catch (error) {
