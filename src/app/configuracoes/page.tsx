@@ -6,22 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { Loader2, AlertTriangle, PlusCircle, Building2, Lock, Users, Mail, Shield, UserX, UserCheck, Edit2, X } from 'lucide-react';
 import FormularioObra, { ObraFormData } from '@/components/obras/FormularioObra';
 import ModalPlanoProObras from '@/components/obras/ModalPlanoProObras';
-import { fetchObras } from '@/lib/supabase';
-
-type Obra = {
-  id: number;
-  nome: string;
-  endereco: string;
-  responsavel_tecnico: string;
-  crea: string;
-  data_inicio: string;
-  data_prevista_fim: string;
-  area_construida: number;
-  orcamento_total: number;
-  status: string;
-  observacoes: string;
-  cliente: string;
-};
+import { fetchObras, Obra } from '@/lib/supabase';
 
 type Usuario = {
   id: string;
