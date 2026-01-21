@@ -4,6 +4,7 @@ import { Fragment, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XCircle } from 'lucide-react';
 import { insertCentroCusto } from '@/lib/supabase';
+import { useObra } from '@/contexts/ObraContext';
 
 type NovoCentroCustoModalProps = {
   isOpen: boolean;
@@ -19,6 +20,7 @@ export default function NovoCentroCustoModal({
   const [descricao, setDescricao] = useState('');
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState('');
+  const { obraSelecionada } = useObra();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,12 +29,22 @@ export default function NovoCentroCustoModal({
       setErro('A descrição é obrigatória');
       return;
     }
+
+    if (!obraSelecionada) {
+      setErro('Selecione uma obra antes de criar um centro de custo.');
+      return;
+    }
+
+    if (!obraSelecionada.empresa_id) {
+      setErro('A obra selecionada está sem empresa vinculada. Verifique o cadastro da obra.');
+      return;
+    }
     
     setErro('');
     setCarregando(true);
     
     try {
-      await insertCentroCusto(descricao);
+      await insertCentroCusto(descricao, { empresaId: obraSelecionada.empresa_id, obraId: obraSelecionada.id });
       setDescricao('');
       onSuccess();
     } catch (error: any) {

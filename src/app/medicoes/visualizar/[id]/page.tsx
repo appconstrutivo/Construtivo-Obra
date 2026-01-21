@@ -84,14 +84,18 @@ export default function VisualizarMedicaoPage({ params }: any) {
   const formatarData = (data: string | null) => {
     if (!data) return '-';
     
-    // Se a string está no formato YYYY-MM-DD (apenas data), cria a data corretamente para evitar problemas de timezone
+    // Se a string está no formato YYYY-MM-DD (apenas data), converte diretamente sem problemas de timezone
     if (data.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const [ano, mes, dia] = data.split('-').map(Number);
-      const dataObj = new Date(ano, mes - 1, dia);
-      return dataObj.toLocaleDateString('pt-BR');
+      const [ano, mes, dia] = data.split('-');
+      return `${dia}/${mes}/${ano}`;
     }
     
-    return new Date(data).toLocaleDateString('pt-BR');
+    // Para outros formatos, tenta usar Date (pode ter problemas de timezone, mas é melhor que nada)
+    try {
+      return new Date(data).toLocaleDateString('pt-BR');
+    } catch {
+      return data;
+    }
   };
   
   const renderStatusBadge = (status: string) => {

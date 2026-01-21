@@ -79,28 +79,40 @@ export default function Grupos() {
     carregarCentrosCusto();
   }, [centroCustoIdParam, obraSelecionada]);
 
-  // Carregar grupos quando o centro de custo selecionado mudar
+  // Carregar grupos quando o centro de custo selecionado ou obra selecionada mudar
   useEffect(() => {
     if (centroCustoSelecionadoId) {
       carregarGrupos(centroCustoSelecionadoId);
     }
-  }, [centroCustoSelecionadoId]);
+  }, [centroCustoSelecionadoId, obraSelecionada]);
 
   // Função para carregar grupos do centro de custo selecionado
   async function carregarGrupos(centroCustoId: number) {
+    if (!obraSelecionada) {
+      setGrupos([]);
+      setCarregando(false);
+      return;
+    }
+
     try {
       setCarregando(true);
       
       // Carregar dados imediatamente para exibição rápida
       const data = await fetchGruposByCentroCusto(centroCustoId);
-      setGrupos(data);
+      
+      // Filtrar apenas grupos da obra selecionada (garantir isolamento)
+      const gruposFiltrados = data.filter(grupo => grupo.obra_id === obraSelecionada.id);
+      
+      setGrupos(gruposFiltrados);
       setCarregando(false);
       
       // Depois, executar a atualização de totais em segundo plano
       atualizarTodosTotais().then(() => {
         // Recarregar grupos após a atualização ser concluída
         fetchGruposByCentroCusto(centroCustoId).then(dataAtualizada => {
-          setGrupos(dataAtualizada);
+          // Filtrar novamente por obra
+          const gruposFiltradosAtualizados = dataAtualizada.filter(grupo => grupo.obra_id === obraSelecionada.id);
+          setGrupos(gruposFiltradosAtualizados);
         });
       });
     } catch (error) {

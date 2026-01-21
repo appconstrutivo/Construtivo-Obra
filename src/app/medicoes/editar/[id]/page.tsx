@@ -300,6 +300,13 @@ export default function EditarMedicaoPage({ params }: any) {
   const calcularTotalParcelas = () => {
     return parcelas.reduce((total, parcela) => total + parcela.valor, 0);
   };
+
+  const formatarData = (dataString: string) => {
+    // Converte de YYYY-MM-DD para DD/MM/YYYY sem problemas de timezone
+    if (!dataString) return '';
+    const [ano, mes, dia] = dataString.split('-');
+    return `${dia}/${mes}/${ano}`;
+  };
   
   const adicionarParcela = () => {
     if (!parcelaForm.data_prevista || parcelaForm.valor <= 0) {
@@ -781,7 +788,7 @@ export default function EditarMedicaoPage({ params }: any) {
                   parcelas.map((parcela, index) => (
                     <tr key={index} className="hover:bg-gray-50">
                       <td className="px-4 py-2 whitespace-nowrap">
-                        {new Date(parcela.data_prevista).toLocaleDateString('pt-BR')}
+                        {formatarData(parcela.data_prevista)}
                       </td>
                       <td className="px-4 py-2 whitespace-nowrap">
                         {parcela.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}

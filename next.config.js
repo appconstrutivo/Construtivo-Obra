@@ -8,7 +8,14 @@ const nextConfig = {
   },
   pageExtensions: ['tsx', 'ts', 'jsx', 'js'],
   trailingSlash: false,
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, dev }) => {
+    // Em Windows + OneDrive/antivírus é comum ocorrer EPERM/ENOENT ao renomear arquivos do cache do webpack,
+    // o que corrompe a pasta `.next` e causa 404 em `/_next/static/*` após F5.
+    // Para estabilidade no DEV, forçar cache em memória.
+    if (dev) {
+      config.cache = { type: 'memory' };
+    }
+
     // Configuração específica para react-pdf
     if (!isServer) {
       config.resolve.fallback = {

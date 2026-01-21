@@ -28,6 +28,7 @@ import PDFModal from '@/components/ui/PDFModal';
 import PDFContrato from '@/components/negociacoes/PDFContrato';
 import { useNotification } from '@/components/ui/notification';
 import { formatarDataBrasil } from '@/lib/utils';
+import { useObra } from '@/contexts/ObraContext';
 
 type ItemCusto = {
   id: number;
@@ -79,6 +80,7 @@ export default function EditarNegociacaoPage({ params }: any) {
   const [loading, setLoading] = useState(false);
   const [loadingDados, setLoadingDados] = useState(true);
   const { showNotification } = useNotification();
+  const { obraSelecionada } = useObra();
   
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [itensCusto, setItensCusto] = useState<ItemCusto[]>([]);
@@ -93,8 +95,6 @@ export default function EditarNegociacaoPage({ params }: any) {
     descricao: '',
     data_inicio: '',
     data_fim: '',
-    obra: '',
-    engenheiro_responsavel: '',
   });
   
   const [itensNegociacao, setItensNegociacao] = useState<ItemNegociacaoState[]>([]);
@@ -425,7 +425,7 @@ export default function EditarNegociacaoPage({ params }: any) {
     setLoading(true);
     
     try {
-      // Atualizar a negociação
+      // Atualizar a negociação usando os dados da obra selecionada
       await updateNegociacao(
         id,
         formData.tipo,
@@ -433,8 +433,9 @@ export default function EditarNegociacaoPage({ params }: any) {
         formData.descricao,
         formData.data_inicio,
         formData.data_fim || undefined,
-        formData.obra || undefined,
-        formData.engenheiro_responsavel || undefined
+        obraSelecionada?.nome || undefined,
+        obraSelecionada?.responsavel_tecnico || undefined,
+        obraSelecionada?.id || null
       );
       
       // Processar os itens da negociação
@@ -694,35 +695,27 @@ export default function EditarNegociacaoPage({ params }: any) {
               />
             </div>
 
-            <div className="space-y-2">
-              <label htmlFor="obra" className="block text-sm font-medium">
-                Obra<span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="obra"
-                name="obra"
-                value={formData.obra}
-                onChange={handleFormChange}
-                placeholder="Código ou nome da obra"
-                className="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+            {obraSelecionada && (
+              <>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-500">
+                    Obra
+                  </label>
+                  <div className="w-full p-2.5 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
+                    {obraSelecionada.nome || 'Não informado'}
+                  </div>
+                </div>
 
-            <div className="space-y-2">
-              <label htmlFor="engenheiro_responsavel" className="block text-sm font-medium">
-                Engenheiro Responsável<span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="engenheiro_responsavel"
-                name="engenheiro_responsavel"
-                value={formData.engenheiro_responsavel}
-                onChange={handleFormChange}
-                placeholder="Nome do engenheiro responsável"
-                className="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-500">
+                    Engenheiro Responsável
+                  </label>
+                  <div className="w-full p-2.5 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
+                    {obraSelecionada.responsavel_tecnico || 'Não informado'}
+                  </div>
+                </div>
+              </>
+            )}
 
             <div className="space-y-2 md:col-span-2">
               <label htmlFor="descricao" className="block text-sm font-medium">

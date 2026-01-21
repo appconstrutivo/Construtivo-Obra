@@ -14,10 +14,12 @@ import {
   insertParcelaMedicao
 } from '@/lib/supabase';
 import { useNotification } from '@/components/ui/notification';
+import { useObra } from '@/contexts/ObraContext';
 
 export default function NovaMedicaoPage() {
   const router = useRouter();
   const { showNotification } = useNotification();
+  const { obraSelecionada } = useObra();
   const [negociacoes, setNegociacoes] = useState<Negociacao[]>([]);
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
@@ -223,7 +225,8 @@ export default function NovaMedicaoPage() {
         dataInicio,
         dataFim,
         observacao,
-        desconto
+        desconto,
+        obraSelecionada?.id || null
       );
       
       // 2. Adicionar os itens da medição
@@ -272,6 +275,13 @@ export default function NovaMedicaoPage() {
       style: 'currency',
       currency: 'BRL'
     });
+  };
+
+  const formatarData = (dataString: string) => {
+    // Converte de YYYY-MM-DD para DD/MM/YYYY sem problemas de timezone
+    if (!dataString) return '';
+    const [ano, mes, dia] = dataString.split('-');
+    return `${dia}/${mes}/${ano}`;
   };
   
   return (
@@ -642,7 +652,7 @@ export default function NovaMedicaoPage() {
                   parcelas.map((parcela, index) => (
                     <tr key={index} className="hover:bg-gray-50">
                       <td className="px-4 py-2 whitespace-nowrap">
-                        {new Date(parcela.data_prevista).toLocaleDateString('pt-BR')}
+                        {formatarData(parcela.data_prevista)}
                       </td>
                       <td className="px-4 py-2 whitespace-nowrap">
                         {parcela.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}

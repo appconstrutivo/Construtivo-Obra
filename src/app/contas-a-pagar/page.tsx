@@ -49,37 +49,58 @@ export default function ContasPagarPage() {
     setLoading(true);
     try {
       // Buscar parcelas de compras
-      const { data: parcelasCompras, error: errorCompras } = await supabase
+      // Nota: parcelas_pedido_compra não tem obra_id diretamente, precisa filtrar via pedido_compra
+      const { data: todasParcelasCompras, error: errorCompras } = await supabase
         .from('parcelas_pedido_compra')
         .select(`
           *,
           pedido_compra:pedido_compra_id(
-            status
+            status,
+            obra_id
           )
         `)
-        .not('data_prevista', 'is', null)
-        .eq('obra_id', obraSelecionada.id)
-        .eq('pedido_compra.status', 'Aprovado');
+        .not('data_prevista', 'is', null);
 
       if (errorCompras) throw errorCompras;
 
+      // Filtrar parcelas da obra selecionada e com pedido aprovado
+      const parcelasCompras = (todasParcelasCompras || []).filter(
+        parcela => 
+          parcela.pedido_compra?.status === 'Aprovado' &&
+          parcela.pedido_compra?.obra_id === obraSelecionada.id
+      );
+
+      console.log(`Total de parcelas de compras encontradas: ${todasParcelasCompras?.length || 0}`);
+      console.log(`Parcelas de compras da obra ${obraSelecionada.id}: ${parcelasCompras.length}`);
+
       // Buscar parcelas de medições
-      const { data: parcelasMedicoes, error: errorMedicoes } = await supabase
+      // Nota: parcelas_medicao não tem obra_id diretamente, precisa filtrar via medicao
+      const { data: todasParcelasMedicoes, error: errorMedicoes } = await supabase
         .from('parcelas_medicao')
         .select(`
           *,
           medicao:medicao_id(
-            status
+            status,
+            obra_id
           )
         `)
-        .not('data_prevista', 'is', null)
-        .eq('obra_id', obraSelecionada.id)
-        .eq('medicao.status', 'Aprovado');
+        .not('data_prevista', 'is', null);
 
       if (errorMedicoes) throw errorMedicoes;
 
+      // Filtrar parcelas da obra selecionada e com medição aprovada
+      const parcelasMedicoes = (todasParcelasMedicoes || []).filter(
+        parcela => 
+          parcela.medicao?.status === 'Aprovado' &&
+          parcela.medicao?.obra_id === obraSelecionada.id
+      );
+
+      console.log(`Total de parcelas de medições encontradas: ${todasParcelasMedicoes?.length || 0}`);
+      console.log(`Parcelas de medições da obra ${obraSelecionada.id}: ${parcelasMedicoes.length}`);
+
       // Calcular estatísticas
       const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
 
       let vencidas = 0;
       let proximos7Dias = 0;
@@ -96,7 +117,12 @@ export default function ContasPagarPage() {
           return;
         }
 
-        const dataVencimento = new Date(parcela.data_prevista);
+        // Extrai a data sem considerar fuso horário para evitar problemas de timezone
+        const dataString = parcela.data_prevista.split('T')[0]; // Remove hora se houver
+        const [ano, mes, dia] = dataString.split('-').map(Number);
+        const dataVencimento = new Date(ano, mes - 1, dia);
+        dataVencimento.setHours(0, 0, 0, 0);
+        
         const valor = Number(parcela.valor) || 0;
 
         // Calcular dias até o vencimento
@@ -133,7 +159,12 @@ export default function ContasPagarPage() {
           return;
         }
 
-        const dataVencimento = new Date(parcela.data_prevista);
+        // Extrai a data sem considerar fuso horário para evitar problemas de timezone
+        const dataString = parcela.data_prevista.split('T')[0]; // Remove hora se houver
+        const [ano, mes, dia] = dataString.split('-').map(Number);
+        const dataVencimento = new Date(ano, mes - 1, dia);
+        dataVencimento.setHours(0, 0, 0, 0);
+        
         const valor = Number(parcela.valor) || 0;
 
         // Calcular dias até o vencimento

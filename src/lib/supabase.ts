@@ -8,6 +8,8 @@ export type CentroCusto = {
   custo: number;
   realizado: number;
   com_bdi: number;
+  empresa_id: number;
+  obra_id?: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -21,6 +23,7 @@ export type Grupo = {
   custo: number;
   realizado: number;
   com_bdi: number;
+  obra_id?: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -63,6 +66,8 @@ export type Fornecedor = {
   contato: string | null;
   telefone: string | null;
   email: string | null;
+  empresa_id: number;
+  obra_id: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -110,6 +115,7 @@ export type Negociacao = {
   obra: string | null;
   engenheiro_responsavel: string | null;
   valor_total: number;
+  empresa_id: number;
   created_at: string;
   updated_at: string;
   // Campos virtuais para exibição
@@ -125,6 +131,7 @@ export type ItemNegociacao = {
   quantidade: number;
   valor_unitario: number;
   valor_total: number;
+  empresa_id: number;
   created_at: string;
   updated_at: string;
   // Campos virtuais para controle de medições
@@ -143,6 +150,7 @@ export type Medicao = {
   status: string; // "Aprovado" | "Pendente"
   desconto?: number;
   observacao?: string;
+  empresa_id: number;
   created_at: string;
   updated_at: string;
   // Campos virtuais para exibição
@@ -161,6 +169,7 @@ export type ItemMedicao = {
   percentual_executado: number;
   valor_unitario: number;
   valor_total: number;
+  empresa_id: number;
   created_at: string;
   updated_at: string;
 };
@@ -172,6 +181,7 @@ export type PedidoCompra = {
   valor_total: number;
   status: string; // "Aprovado" | "Pendente"
   observacoes: string | null;
+  empresa_id: number;
   created_at: string;
   updated_at: string;
   // Campos virtuais para exibição
@@ -203,6 +213,7 @@ export type ParcelaPagamento = {
   valor: number;
   descricao: string | null;
   status: string;
+  empresa_id: number;
   created_at: string;
   updated_at: string;
 };
@@ -214,6 +225,7 @@ export type ParcelaPedidoCompra = {
   valor: number;
   descricao: string | null;
   status: string;
+  empresa_id: number;
   created_at: string;
   updated_at: string;
 };
@@ -225,6 +237,7 @@ export type ParcelaMedicao = {
   valor: number;
   descricao: string | null;
   status: string;
+  empresa_id: number;
   created_at: string;
   updated_at: string;
 };
@@ -257,8 +270,11 @@ export async function fetchCentrosCusto(obraId?: number) {
   return data as CentroCusto[];
 }
 
-export async function insertCentroCusto(descricao: string) {
-  // Buscar o último código para incrementar
+export async function insertCentroCusto(
+  descricao: string,
+  opts: { empresaId: number; obraId?: number | null }
+) {
+  // Buscar o último código para incrementar (por empresa; RLS já isola)
   const { data: ultimoCentro, error: errorUltimo } = await supabase
     .from('centros_custo')
     .select('codigo')
@@ -266,23 +282,25 @@ export async function insertCentroCusto(descricao: string) {
     .limit(1);
 
   let novoCodigo = '01';
-  
+
   if (!errorUltimo && ultimoCentro && ultimoCentro.length > 0) {
     const ultimoCodigo = parseInt(ultimoCentro[0].codigo);
     novoCodigo = (ultimoCodigo + 1).toString().padStart(2, '0');
   }
-  
+
   const { data, error } = await supabase
     .from('centros_custo')
     .insert([
-      { 
+      {
         codigo: novoCodigo,
         descricao,
         orcado: 0,
         custo: 0,
         realizado: 0,
-        com_bdi: 0
-      }
+        com_bdi: 0,
+        empresa_id: opts.empresaId,
+        obra_id: opts.obraId ?? null,
+      },
     ])
     .select();
   
@@ -316,18 +334,31 @@ export async function updateCentroCusto(id: number, descricao: string) {
 }
 
 export async function deleteCentroCusto(id: number) {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('centros_custo')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    // Importante: com RLS, um DELETE pode retornar "sucesso" mas afetar 0 linhas.
+    // Pedimos retorno para validar se realmente deletou.
+    .select('id');
   
   if (error) {
     console.error('Erro ao excluir centro de custo:', error);
     throw error;
   }
+
+  if (!data || data.length === 0) {
+    // Sem permissão (ex.: policy exige is_empresa_admin()) ou registro não encontrado
+    const err: any = new Error(
+      'Exclusão não permitida. Apenas usuários administradores podem excluir centros de custo.'
+    );
+    err.code = 'RLS_DENY_DELETE';
+    throw err;
+  }
   
   // Atualizar totais do sistema após excluir um centro de custo
-  await atualizarTodosTotais();
+  // Não bloquear o fluxo do usuário por falhas na rotina de totais (best-effort)
+  atualizarTodosTotais().catch((e) => console.error('Erro ao atualizar totais após excluir centro de custo:', e));
   
   return true;
 }
@@ -350,16 +381,20 @@ export async function fetchGruposByCentroCusto(centroCustoId: number) {
 }
 
 export async function insertGrupo(centroCustoId: number, descricao: string) {
-  // Buscar o código do centro de custo
+  // Buscar o código e obra_id do centro de custo
   const { data: centroCusto, error: errorCentroCusto } = await supabase
     .from('centros_custo')
-    .select('codigo')
+    .select('codigo, obra_id, empresa_id')
     .eq('id', centroCustoId)
     .single();
   
   if (errorCentroCusto || !centroCusto) {
     console.error('Erro ao buscar centro de custo:', errorCentroCusto);
     throw errorCentroCusto;
+  }
+  
+  if (!centroCusto.empresa_id) {
+    throw new Error('Centro de custo não possui empresa_id');
   }
 
   // Buscar o último código de grupo para este centro de custo
@@ -390,6 +425,8 @@ export async function insertGrupo(centroCustoId: number, descricao: string) {
     .insert([
       { 
         centro_custo_id: centroCustoId,
+        empresa_id: centroCusto.empresa_id,
+        obra_id: centroCusto.obra_id, // Herdar obra_id do centro de custo
         codigo: novoCodigo,
         descricao,
         orcado: 0,
@@ -498,13 +535,17 @@ export async function insertItemOrcamento(
 ) {
   const { data: grupo, error: errorGrupo } = await supabase
     .from('grupos')
-    .select('codigo')
+    .select('codigo, empresa_id')
     .eq('id', grupoId)
     .single();
   
   if (errorGrupo || !grupo) {
     console.error('Erro ao buscar grupo:', errorGrupo);
     throw errorGrupo;
+  }
+  
+  if (!grupo.empresa_id) {
+    throw new Error('Grupo não possui empresa_id');
   }
 
   // Buscar o último código de item para este grupo
@@ -539,6 +580,7 @@ export async function insertItemOrcamento(
     .insert([
       { 
         grupo_id: grupoId,
+        empresa_id: grupo.empresa_id,
         codigo: novoCodigo,
         descricao,
         unidade,
@@ -668,13 +710,17 @@ export async function insertItemCusto(
 ) {
   const { data: grupo, error: errorGrupo } = await supabase
     .from('grupos')
-    .select('codigo')
+    .select('codigo, empresa_id')
     .eq('id', grupoId)
     .single();
   
   if (errorGrupo || !grupo) {
     console.error('Erro ao buscar grupo:', errorGrupo);
     throw errorGrupo;
+  }
+  
+  if (!grupo.empresa_id) {
+    throw new Error('Grupo não possui empresa_id');
   }
 
   // Buscar o último código de item de custo para este grupo
@@ -708,6 +754,7 @@ export async function insertItemCusto(
     .insert([
       { 
         grupo_id: grupoId,
+        empresa_id: grupo.empresa_id,
         item_orcamento_id: itemOrcamentoId,
         codigo: novoCodigo,
         descricao,
@@ -1091,17 +1138,51 @@ export async function fetchFornecedorById(id: number) {
   return data as Fornecedor;
 }
 
+/**
+ * Obter empresa_id do usuário autenticado
+ */
+async function getEmpresaId(): Promise<number> {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    throw new Error('Usuário não autenticado');
+  }
+
+  const { data: usuario, error } = await supabase
+    .from('usuarios')
+    .select('empresa_id')
+    .eq('id', user.id)
+    .single();
+
+  if (error || !usuario) {
+    throw new Error('Erro ao obter empresa_id do usuário');
+  }
+
+  return usuario.empresa_id;
+}
+
 export async function insertFornecedor(
   nome: string, 
   documento: string, 
   contato?: string, 
   telefone?: string, 
-  email?: string
+  email?: string,
+  obraId?: number | null
 ) {
-  // Buscar o último código para incrementar
-  const { data: ultimoFornecedor, error: errorUltimo } = await supabase
+  // Obter empresa_id do usuário autenticado
+  const empresa_id = await getEmpresaId();
+
+  // Buscar o último código para incrementar (filtrado por empresa e obra, se houver)
+  let query = supabase
     .from('fornecedores')
     .select('codigo')
+    .eq('empresa_id', empresa_id);
+  
+  if (obraId) {
+    query = query.eq('obra_id', obraId);
+  }
+  
+  const { data: ultimoFornecedor, error: errorUltimo } = await query
     .order('codigo', { ascending: false })
     .limit(1);
 
@@ -1121,7 +1202,9 @@ export async function insertFornecedor(
         documento,
         contato,
         telefone,
-        email
+        email,
+        empresa_id,
+        obra_id: obraId || null
       }
     ])
     .select();
@@ -1276,15 +1359,20 @@ export async function insertNegociacao(
   data_inicio: string,
   data_fim?: string,
   obra?: string,
-  engenheiro_responsavel?: string
+  engenheiro_responsavel?: string,
+  obraId?: number | null
 ) {
+  // Obter empresa_id do usuário autenticado
+  const empresa_id = await getEmpresaId();
+
   // Gerar número baseado no tipo e sequence
   const prefixo = tipo === 'Contrato' ? 'CT' : tipo === 'Pedido de Compra' ? 'PC' : 'LOC';
   
-  // Buscar o último número para este tipo
+  // Buscar o último número para este tipo (filtrado por empresa)
   const { data: ultimaNegociacao, error: errorUltima } = await supabase
     .from('negociacoes')
     .select('numero')
+    .eq('empresa_id', empresa_id)
     .ilike('numero', `${prefixo}%`)
     .order('numero', { ascending: false })
     .limit(1);
@@ -1315,7 +1403,9 @@ export async function insertNegociacao(
         data_fim,
         obra,
         engenheiro_responsavel,
-        valor_total: 0
+        valor_total: 0,
+        empresa_id,
+        obra_id: obraId || null
       }
     ])
     .select();
@@ -1336,20 +1426,27 @@ export async function updateNegociacao(
   data_inicio: string,
   data_fim?: string,
   obra?: string,
-  engenheiro_responsavel?: string
+  engenheiro_responsavel?: string,
+  obraId?: number | null
 ) {
+  const updateData: any = { 
+    tipo,
+    fornecedor_id,
+    descricao,
+    data_inicio,
+    data_fim,
+    obra,
+    engenheiro_responsavel,
+    updated_at: new Date().toISOString() 
+  };
+  
+  if (obraId !== undefined) {
+    updateData.obra_id = obraId;
+  }
+  
   const { data, error } = await supabase
     .from('negociacoes')
-    .update({ 
-      tipo,
-      fornecedor_id,
-      descricao,
-      data_inicio,
-      data_fim,
-      obra,
-      engenheiro_responsavel,
-      updated_at: new Date().toISOString() 
-    })
+    .update(updateData)
     .eq('id', id)
     .select();
   
@@ -1396,6 +1493,17 @@ export async function insertParcelaPagamento(
   valor: number,
   descricao?: string
 ) {
+  // Obter empresa_id da negociação
+  const { data: negociacao, error: errorNegociacao } = await supabase
+    .from('negociacoes')
+    .select('empresa_id')
+    .eq('id', negociacao_id)
+    .single();
+
+  if (errorNegociacao || !negociacao) {
+    throw new Error('Erro ao obter empresa_id da negociação');
+  }
+
   const { data, error } = await supabase
     .from('parcelas_pagamento')
     .insert([
@@ -1404,7 +1512,8 @@ export async function insertParcelaPagamento(
         data_prevista,
         valor,
         descricao,
-        status: 'Pendente'
+        status: 'Pendente',
+        empresa_id: negociacao.empresa_id
       }
     ])
     .select();
@@ -1481,6 +1590,17 @@ export async function insertItemNegociacao(
   quantidade: number,
   valor_unitario: number
 ) {
+  // Obter empresa_id da negociação
+  const { data: negociacao, error: errorNegociacao } = await supabase
+    .from('negociacoes')
+    .select('empresa_id')
+    .eq('id', negociacao_id)
+    .single();
+
+  if (errorNegociacao || !negociacao) {
+    throw new Error('Erro ao obter empresa_id da negociação');
+  }
+
   const valor_total = quantidade * valor_unitario;
   
   const { data, error } = await supabase
@@ -1493,7 +1613,8 @@ export async function insertItemNegociacao(
         unidade,
         quantidade,
         valor_unitario,
-        valor_total
+        valor_total,
+        empresa_id: negociacao.empresa_id
       }
     ])
     .select();
@@ -1724,8 +1845,23 @@ export async function insertMedicao(
   data_inicio: string,
   data_fim: string,
   observacao?: string,
-  desconto?: number
+  desconto?: number,
+  obraId?: number | null
 ) {
+  // Obter empresa_id e obra_id da negociação
+  const { data: negociacao, error: errorNegociacao } = await supabase
+    .from('negociacoes')
+    .select('empresa_id, obra_id')
+    .eq('id', negociacao_id)
+    .single();
+
+  if (errorNegociacao || !negociacao) {
+    throw new Error('Erro ao obter dados da negociação');
+  }
+
+  // Usar obraId fornecido ou o da negociação
+  const obra_id_final = obraId !== undefined ? obraId : negociacao.obra_id;
+
   const { data, error } = await supabase
     .from('medicoes')
     .insert([
@@ -1736,7 +1872,9 @@ export async function insertMedicao(
         valor_total: 0,
         status: 'Pendente',
         observacao,
-        desconto: desconto || 0
+        desconto: desconto || 0,
+        empresa_id: negociacao.empresa_id,
+        obra_id: obra_id_final
       }
     ])
     .select();
@@ -2017,6 +2155,17 @@ export async function insertItemMedicao(
   quantidade_medida: number,
   valor_unitario: number
 ) {
+  // Obter empresa_id da medição
+  const { data: medicao, error: errorMedicao } = await supabase
+    .from('medicoes')
+    .select('empresa_id')
+    .eq('id', medicao_id)
+    .single();
+
+  if (errorMedicao || !medicao) {
+    throw new Error('Erro ao obter empresa_id da medição');
+  }
+
   const percentual_executado = (quantidade_medida / quantidade_total) * 100;
   const valor_total = quantidade_medida * valor_unitario;
   
@@ -2032,7 +2181,8 @@ export async function insertItemMedicao(
         quantidade_medida,
         percentual_executado,
         valor_unitario,
-        valor_total
+        valor_total,
+        empresa_id: medicao.empresa_id
       }
     ])
     .select();
@@ -2606,8 +2756,23 @@ export async function fetchPedidoCompraById(id: number) {
 export async function insertPedidoCompra(
   fornecedor_id: number,
   data_compra: string,
-  observacoes?: string
+  observacoes?: string,
+  obraId?: number | null
 ) {
+  // Obter empresa_id do fornecedor
+  const { data: fornecedor, error: errorFornecedor } = await supabase
+    .from('fornecedores')
+    .select('empresa_id, obra_id')
+    .eq('id', fornecedor_id)
+    .single();
+
+  if (errorFornecedor || !fornecedor) {
+    throw new Error('Erro ao obter empresa_id do fornecedor');
+  }
+
+  // Usar obraId fornecido ou o do fornecedor
+  const obra_id_final = obraId !== undefined ? obraId : fornecedor.obra_id;
+
   // Inserir o novo pedido
   const { data, error } = await supabase
     .from('pedidos_compra')
@@ -2617,7 +2782,9 @@ export async function insertPedidoCompra(
         data_compra,
         valor_total: 0,
         status: 'Pendente',
-        observacoes: observacoes || null
+        observacoes: observacoes || null,
+        empresa_id: fornecedor.empresa_id,
+        obra_id: obra_id_final
       }
     ])
     .select();
@@ -2828,6 +2995,17 @@ export async function insertItemPedidoCompra(
   quantidade: number,
   valor_unitario: number
 ) {
+  // Obter empresa_id do pedido de compra
+  const { data: pedido, error: errorPedido } = await supabase
+    .from('pedidos_compra')
+    .select('empresa_id')
+    .eq('id', pedido_compra_id)
+    .single();
+
+  if (errorPedido || !pedido) {
+    throw new Error('Erro ao obter empresa_id do pedido de compra');
+  }
+
   const valor_total = quantidade * valor_unitario;
   
   const { data, error } = await supabase
@@ -2840,7 +3018,8 @@ export async function insertItemPedidoCompra(
         unidade,
         quantidade,
         valor_unitario,
-        valor_total
+        valor_total,
+        empresa_id: pedido.empresa_id
       }
     ])
     .select();
@@ -3301,6 +3480,17 @@ export async function insertParcelaPedidoCompra(
   valor: number,
   descricao?: string
 ) {
+  // Obter empresa_id do pedido de compra
+  const { data: pedido, error: errorPedido } = await supabase
+    .from('pedidos_compra')
+    .select('empresa_id')
+    .eq('id', pedido_compra_id)
+    .single();
+
+  if (errorPedido || !pedido) {
+    throw new Error('Erro ao obter empresa_id do pedido de compra');
+  }
+
   const { data, error } = await supabase
     .from('parcelas_pedido_compra')
     .insert([
@@ -3309,7 +3499,8 @@ export async function insertParcelaPedidoCompra(
         data_prevista,
         valor,
         descricao,
-        status: 'Pendente'
+        status: 'Pendente',
+        empresa_id: pedido.empresa_id
       }
     ])
     .select();
@@ -3385,6 +3576,17 @@ export async function insertParcelaMedicao(
   valor: number,
   descricao?: string
 ) {
+  // Obter empresa_id da medição
+  const { data: medicao, error: errorMedicao } = await supabase
+    .from('medicoes')
+    .select('empresa_id')
+    .eq('id', medicao_id)
+    .single();
+
+  if (errorMedicao || !medicao) {
+    throw new Error('Erro ao obter empresa_id da medição');
+  }
+
   const { data, error } = await supabase
     .from('parcelas_medicao')
     .insert([
@@ -3393,7 +3595,8 @@ export async function insertParcelaMedicao(
         data_prevista,
         valor,
         descricao,
-        status: 'Pendente'
+        status: 'Pendente',
+        empresa_id: medicao.empresa_id
       }
     ])
     .select();

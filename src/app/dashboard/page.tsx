@@ -144,6 +144,7 @@ export default function Dashboard() {
   // Estados para controle de navegação temporal do gráfico de evolução
   const [periodoInicial, setPeriodoInicial] = useState(0); // Mês inicial do período exibido (0 = Janeiro)
   const [mesesExibidos] = useState(6); // Quantidade de meses exibidos por vez
+  const [anoSelecionado, setAnoSelecionado] = useState(new Date().getFullYear()); // Ano selecionado para análise
   
   // Cache simples dos dados carregados (para navegação temporal sem recarregar do servidor)
   const [dadosCompletos, setDadosCompletos] = useState<{
@@ -229,29 +230,45 @@ export default function Dashboard() {
           .eq('obra_id', obraSelecionada.id);
 
         // Buscar parcelas de pedidos de compra com previsão de desembolso
-        const { data: todasParcelas } = await supabase
+        // Nota: parcelas_pedido_compra não tem obra_id diretamente, precisa filtrar via pedido_compra
+        const { data: todasParcelasRaw } = await supabase
           .from('parcelas_pedido_compra')
           .select(`
             *,
-            pedido_compra:pedido_compra_id(*)
+            pedido_compra:pedido_compra_id(
+              *,
+              obra_id
+            )
           `)
-          .not('data_prevista', 'is', null)
-          .eq('obra_id', obraSelecionada.id)
-          .eq('pedido_compra.status', 'Aprovado');
+          .not('data_prevista', 'is', null);
+
+        // Filtrar parcelas da obra selecionada e com pedido aprovado
+        const todasParcelas = (todasParcelasRaw || []).filter(
+          parcela => 
+            parcela.pedido_compra?.status === 'Aprovado' &&
+            parcela.pedido_compra?.obra_id === obraSelecionada.id
+        );
 
         // Buscar parcelas de medições com previsão de desembolso
-        const { data: todasParcelasMedicao } = await supabase
+        // Nota: parcelas_medicao não tem obra_id diretamente, precisa filtrar via medicao
+        const { data: todasParcelasMedicaoRaw } = await supabase
           .from('parcelas_medicao')
           .select(`
             *,
             medicao:medicao_id(
               status,
-              negociacao_id
+              negociacao_id,
+              obra_id
             )
           `)
-          .not('data_prevista', 'is', null)
-          .eq('obra_id', obraSelecionada.id)
-          .eq('medicao.status', 'Aprovado');
+          .not('data_prevista', 'is', null);
+
+        // Filtrar parcelas da obra selecionada e com medição aprovada
+        const todasParcelasMedicao = (todasParcelasMedicaoRaw || []).filter(
+          parcela => 
+            parcela.medicao?.status === 'Aprovado' &&
+            parcela.medicao?.obra_id === obraSelecionada.id
+        );
 
         // Buscar parcelas a receber (receitas)
         const { data: todasParcelasReceber } = await supabase
@@ -363,7 +380,7 @@ export default function Dashboard() {
             const dataRecebimento = new Date(Number(ano), Number(mes) - 1, Number(dia));
             const anoRecebimento = dataRecebimento.getFullYear();
             
-            if (anoRecebimento === 2025) { // Filtrar apenas 2025
+            if (anoRecebimento === anoSelecionado) {
               const mesRecebimento = mesesDoAno[dataRecebimento.getMonth()];
               mesesValores[mesRecebimento].Receitas += Number(parcela.valor);
             }
@@ -378,7 +395,7 @@ export default function Dashboard() {
             const dataPrevisao = new Date(parcela.data_prevista);
             const anoPrevisao = dataPrevisao.getFullYear();
             
-            if (anoPrevisao === 2025) { // Filtrar apenas 2025
+            if (anoPrevisao === anoSelecionado) {
               const mesPrevisao = mesesDoAno[dataPrevisao.getMonth()];
               mesesValores[mesPrevisao].Despesas += Number(parcela.valor);
             }
@@ -394,7 +411,7 @@ export default function Dashboard() {
             const anoPrevisao = dataPrevisao.getFullYear();
             const mesPrevisao = dataPrevisao.getMonth();
             
-            if (anoPrevisao === 2025) { // Filtrar apenas 2025
+            if (anoPrevisao === anoSelecionado) {
               const mesPrevisaoStr = mesesDoAno[mesPrevisao];
               mesesValores[mesPrevisaoStr].Despesas += Number(parcela.valor);
             }
@@ -559,30 +576,46 @@ export default function Dashboard() {
               .eq('obra_id', obraSelecionada.id)
               .order('created_at', { ascending: false });
 
-            const { data: todasParcelas } = await supabase
+            // Buscar parcelas de pedidos de compra (sem filtro de obra_id direto)
+            const { data: todasParcelasRaw } = await supabase
               .from('parcelas_pedido_compra')
               .select(`
                 *,
-                pedido_compra:pedido_compra_id(*)
+                pedido_compra:pedido_compra_id(
+                  *,
+                  obra_id
+                )
               `)
               .not('data_prevista', 'is', null)
-              .eq('obra_id', obraSelecionada.id)
-              .eq('pedido_compra.status', 'Aprovado')
               .order('created_at', { ascending: false });
 
-            const { data: todasParcelasMedicao } = await supabase
+            // Filtrar parcelas da obra selecionada e com pedido aprovado
+            const todasParcelas = (todasParcelasRaw || []).filter(
+              parcela => 
+                parcela.pedido_compra?.status === 'Aprovado' &&
+                parcela.pedido_compra?.obra_id === obraSelecionada.id
+            );
+
+            // Buscar parcelas de medições (sem filtro de obra_id direto)
+            const { data: todasParcelasMedicaoRaw } = await supabase
               .from('parcelas_medicao')
               .select(`
                 *,
                 medicao:medicao_id(
                   status,
-                  negociacao_id
+                  negociacao_id,
+                  obra_id
                 )
               `)
               .not('data_prevista', 'is', null)
-              .eq('obra_id', obraSelecionada.id)
-              .eq('medicao.status', 'Aprovado')
               .order('created_at', { ascending: false });
+
+            // Filtrar parcelas da obra selecionada e com medição aprovada
+            const todasParcelasMedicao = (todasParcelasMedicaoRaw || []).filter(
+              parcela => 
+                parcela.medicao?.status === 'Aprovado' &&
+                parcela.medicao?.obra_id === obraSelecionada.id
+            );
 
             const { data: todasParcelasReceber } = await supabase
               .from('parcelas_receber')
@@ -650,7 +683,7 @@ export default function Dashboard() {
         const dataRecebimento = new Date(Number(ano), Number(mes) - 1, Number(dia));
         const anoRecebimento = dataRecebimento.getFullYear();
         
-        if (anoRecebimento === 2025) { // Filtrar apenas 2025
+        if (anoRecebimento === anoSelecionado) {
           const mesRecebimento = mesesDoAno[dataRecebimento.getMonth()];
           mesesValores[mesRecebimento].Receitas += Number(parcela.valor);
         }
@@ -665,7 +698,7 @@ export default function Dashboard() {
         const dataPrevisao = new Date(parcela.data_prevista);
         const anoPrevisao = dataPrevisao.getFullYear();
         
-        if (anoPrevisao === 2025) { // Filtrar apenas 2025
+        if (anoPrevisao === anoSelecionado) {
           const mesPrevisao = mesesDoAno[dataPrevisao.getMonth()];
           mesesValores[mesPrevisao].Despesas += Number(parcela.valor);
         }
@@ -680,7 +713,7 @@ export default function Dashboard() {
         const dataPrevisao = new Date(parcela.data_prevista);
         const anoPrevisao = dataPrevisao.getFullYear();
         
-        if (anoPrevisao === 2025) { // Filtrar apenas 2025
+        if (anoPrevisao === anoSelecionado) {
           const mesPrevisao = mesesDoAno[dataPrevisao.getMonth()];
           mesesValores[mesPrevisao].Despesas += Number(parcela.valor);
         }
@@ -695,7 +728,7 @@ export default function Dashboard() {
     }));
     
     setEvolucaoObraData(evolucaoData);
-  }, [periodoInicial, dadosCompletos, mesesExibidos]); // Recalcular quando período ou dados mudarem
+  }, [periodoInicial, dadosCompletos, mesesExibidos, anoSelecionado]); // Recalcular quando período, dados ou ano mudarem
 
 
 
@@ -804,31 +837,58 @@ export default function Dashboard() {
                     Comparativo entre receitas e despesas por mês
                   </p>
                 </div>
-                {/* Controles de Navegação Temporal */}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={navegarAnterior}
-                    disabled={!podeNavegarAnterior}
-                    className="p-2 rounded-lg border hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    title={podeNavegarAnterior ? "Ver período anterior" : "Início do ano alcançado"}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="15,18 9,12 15,6"></polyline>
-                    </svg>
-                  </button>
-                  <span className="text-sm font-medium text-gray-700 min-w-[90px] text-center bg-gray-50 px-3 py-1 rounded-md">
-                    {obterPeriodoAtual()}
-                  </span>
-                  <button
-                    onClick={navegarProximo}
-                    disabled={!podeNavegarProximo}
-                    className="p-2 rounded-lg border hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    title={podeNavegarProximo ? "Ver próximo período" : "Final do ano alcançado"}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="9,18 15,12 9,6"></polyline>
-                    </svg>
-                  </button>
+                {/* Controles de Navegação Temporal e Seletor de Ano */}
+                <div className="flex items-center gap-3">
+                  {/* Seletor de Ano */}
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="ano-selecionado" className="text-sm font-medium text-gray-700">
+                      Ano:
+                    </label>
+                    <select
+                      id="ano-selecionado"
+                      value={anoSelecionado}
+                      onChange={(e) => {
+                        setAnoSelecionado(Number(e.target.value));
+                        setPeriodoInicial(0); // Resetar para o início do ano quando mudar o ano
+                      }}
+                      className="px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      {Array.from({ length: 10 }, (_, i) => {
+                        const ano = new Date().getFullYear() - 5 + i;
+                        return (
+                          <option key={ano} value={ano}>
+                            {ano}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                  {/* Controles de Navegação Temporal */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={navegarAnterior}
+                      disabled={!podeNavegarAnterior}
+                      className="p-2 rounded-lg border hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      title={podeNavegarAnterior ? "Ver período anterior" : "Início do ano alcançado"}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="15,18 9,12 15,6"></polyline>
+                      </svg>
+                    </button>
+                    <span className="text-sm font-medium text-gray-700 min-w-[90px] text-center bg-gray-50 px-3 py-1 rounded-md">
+                      {obterPeriodoAtual()}
+                    </span>
+                    <button
+                      onClick={navegarProximo}
+                      disabled={!podeNavegarProximo}
+                      className="p-2 rounded-lg border hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      title={podeNavegarProximo ? "Ver próximo período" : "Final do ano alcançado"}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="9,18 15,12 9,6"></polyline>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

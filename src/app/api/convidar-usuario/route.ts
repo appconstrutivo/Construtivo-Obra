@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zgoafwgxenhwhkxdkwox.supabase.co';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Cliente com service role para operações admin
-const supabaseAdmin = supabaseServiceRoleKey
+const supabaseAdmin = supabaseUrl && supabaseServiceRoleKey
   ? createClient(supabaseUrl, supabaseServiceRoleKey, {
       auth: {
         autoRefreshToken: false,
@@ -16,6 +16,13 @@ const supabaseAdmin = supabaseServiceRoleKey
 
 export async function POST(request: NextRequest) {
   try {
+    if (!supabaseUrl) {
+      return NextResponse.json(
+        { error: 'Supabase env vars não configuradas (NEXT_PUBLIC_SUPABASE_URL)' },
+        { status: 500 }
+      );
+    }
+
     if (!supabaseAdmin) {
       return NextResponse.json(
         { error: 'Service role key não configurada' },

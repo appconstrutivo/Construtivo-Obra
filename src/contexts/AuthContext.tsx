@@ -185,6 +185,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       console.log('Fazendo logout...');
+      const userId = user?.id;
       
       // Primeiro, limpar estado local imediatamente
       setSession(null);
@@ -192,6 +193,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Tentar logout do Supabase
       await supabase.auth.signOut();
+
+      // Garantir limpeza de cookies no servidor (middleware/SSR)
+      try {
+        await fetch('/api/logout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId }),
+        });
+      } catch (error) {
+        console.warn('Falha ao chamar /api/logout (seguindo com logout local):', error);
+      }
       
       // Limpar storage após logout
       clearAllAuthData();

@@ -233,7 +233,7 @@ export default function Sidebar() {
 
   const handleLogoutClick = () => {
     // Implementar lógica de logout
-    signOut();
+    void signOut();
     
     // Fechar o sidebar independentemente do tamanho da tela
     setIsCollapsed(true);

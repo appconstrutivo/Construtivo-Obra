@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 
 interface PedidoRelacionado {
@@ -23,6 +24,17 @@ interface MedicaoRelacionada {
   item_valor: number;
 }
 
+interface NegociacaoRelacionada {
+  item_negociacao_id: number;
+  negociacao_id: number;
+  numero: string;
+  descricao: string;
+  fornecedor_nome: string;
+  quantidade: number;
+  valor_unitario: number;
+  valor_total: number;
+}
+
 interface RelacionamentosItemModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -41,6 +53,8 @@ export function RelacionamentosItemModal({
   const [loading, setLoading] = useState(false);
   const [pedidos, setPedidos] = useState<PedidoRelacionado[]>([]);
   const [medicoes, setMedicoes] = useState<MedicaoRelacionada[]>([]);
+  const [negociacoes, setNegociacoes] = useState<NegociacaoRelacionada[]>([]);
+  const [removendoVinculoId, setRemovendoVinculoId] = useState<number | null>(null);
 
   useEffect(() => {
     if (isOpen && itemId) {
@@ -51,6 +65,23 @@ export function RelacionamentosItemModal({
   const fetchRelacionamentos = async () => {
     setLoading(true);
     try {
+      // Buscar negociações/contratos vinculados diretamente (itens_negociacao)
+      const { data: negociacoesData } = await supabase
+        .from('itens_negociacao')
+        .select(`
+          id,
+          negociacao_id,
+          quantidade,
+          valor_unitario,
+          valor_total,
+          negociacoes:negociacao_id (
+            numero,
+            descricao,
+            fornecedores:fornecedor_id (nome)
+          )
+        `)
+        .eq('item_custo_id', itemId);
+
       // Buscar pedidos de compra relacionados
       const { data: pedidosData } = await supabase
         .from('itens_pedido_compra')
@@ -89,6 +120,18 @@ export function RelacionamentosItemModal({
         .eq('itens_negociacao.item_custo_id', itemId)
         .eq('medicoes.status', 'Aprovado');
 
+      // Processar negociações
+      const negociacoesProcessadas: NegociacaoRelacionada[] = negociacoesData?.map((row: any) => ({
+        item_negociacao_id: row.id,
+        negociacao_id: row.negociacao_id,
+        numero: row.negociacoes?.numero || `#${row.negociacao_id}`,
+        descricao: row.negociacoes?.descricao || 'Sem descrição',
+        fornecedor_nome: row.negociacoes?.fornecedores?.nome || 'Não especificado',
+        quantidade: Number(row.quantidade || 0),
+        valor_unitario: Number(row.valor_unitario || 0),
+        valor_total: Number(row.valor_total || 0),
+      })) || [];
+
       // Processar pedidos
       const pedidosProcessados: PedidoRelacionado[] = pedidosData?.map((item: any) => ({
         id: item.pedidos_compra.id,
@@ -111,12 +154,31 @@ export function RelacionamentosItemModal({
         item_valor: item.valor_total
       })) || [];
 
+      setNegociacoes(negociacoesProcessadas);
       setPedidos(pedidosProcessados);
       setMedicoes(medicoesProcessadas);
     } catch (error) {
       console.error('Erro ao buscar relacionamentos:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const removerVinculoNegociacao = async (itemNegociacaoId: number) => {
+    setRemovendoVinculoId(itemNegociacaoId);
+    try {
+      const { error } = await supabase
+        .from('itens_negociacao')
+        .delete()
+        .eq('id', itemNegociacaoId);
+
+      if (error) throw error;
+
+      await fetchRelacionamentos();
+    } catch (error) {
+      console.error('Erro ao remover vínculo do item na negociação:', error);
+    } finally {
+      setRemovendoVinculoId(null);
     }
   };
 
@@ -159,6 +221,92 @@ export function RelacionamentosItemModal({
           </div>
         ) : (
           <div className="space-y-8">
+            {/* Negociações / Contratos */}
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                <svg className="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Negociações/Contratos ({negociacoes.length})
+              </h3>
+              
+              {negociacoes.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">
+                  Nenhuma negociação/contrato encontrado para este item.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Contrato
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Fornecedor
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Descrição
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Qtde
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          V. Unit.
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Total
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Ações
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {negociacoes.map((n) => (
+                        <tr key={n.item_negociacao_id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            <Link
+                              href={`/negociacoes/editar/${n.negociacao_id}`}
+                              className="text-blue-600 hover:text-blue-800"
+                              title="Abrir contrato para revisão"
+                            >
+                              {n.numero}
+                            </Link>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {n.fornecedor_nome}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {n.descricao}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {n.quantidade.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {formatCurrency(n.valor_unitario)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-600">
+                            {formatCurrency(n.valor_total)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <button
+                              className="text-red-600 hover:text-red-800 disabled:opacity-50"
+                              onClick={() => removerVinculoNegociacao(n.item_negociacao_id)}
+                              disabled={removendoVinculoId === n.item_negociacao_id}
+                              title="Remove o vínculo (remove o item do contrato)"
+                            >
+                              {removendoVinculoId === n.item_negociacao_id ? 'Removendo...' : 'Remover vínculo'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
             {/* Pedidos de Compra */}
             <div>
               <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">

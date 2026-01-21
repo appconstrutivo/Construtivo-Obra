@@ -1,8 +1,14 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zgoafwgxenhwhkxdkwox.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpnb2Fmd2d4ZW5od2hreGRrd294Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3MDYxMDcsImV4cCI6MjA4NDI4MjEwN30.Fdlx_f8_fP1KmaBvAATb4PyNSEC8Rtd7c6wGURZIMow';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error(
+    'Supabase env vars não configuradas. Defina NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY.'
+  );
+}
 
 // Storage personalizado que salva em localStorage E cookies
 const dualStorage = {
@@ -45,9 +51,10 @@ const dualStorage = {
       const expires = new Date();
       expires.setDate(expires.getDate() + 1); // 1 dia
       const encodedValue = encodeURIComponent(value);
+      const secureAttr = window.location.protocol === 'https:' ? '; Secure' : '';
       
       // Cookie com configurações compatíveis com o middleware
-      document.cookie = `${key}=${encodedValue}; expires=${expires.toUTCString()}; path=/; SameSite=Lax; Secure=${window.location.protocol === 'https:'}`;
+      document.cookie = `${key}=${encodedValue}; expires=${expires.toUTCString()}; path=/; SameSite=Lax${secureAttr}`;
       console.log(`[Client] Sessão TAMBÉM salva em cookies: ${key}`);
       
     } catch (error) {
@@ -66,7 +73,8 @@ const dualStorage = {
       console.log(`[Client] Sessão removida do localStorage: ${key}`);
       
       // Remover dos cookies
-      document.cookie = `${key}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax`;
+      const secureAttr = window.location.protocol === 'https:' ? '; Secure' : '';
+      document.cookie = `${key}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax${secureAttr}`;
       console.log(`[Client] Sessão removida dos cookies: ${key}`);
       
     } catch (error) {

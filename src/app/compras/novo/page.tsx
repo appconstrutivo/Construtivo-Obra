@@ -15,10 +15,12 @@ import {
 } from '@/lib/supabase';
 import { useNotification } from '@/components/ui/notification';
 import { formatarDataBrasil } from '@/lib/utils';
+import { useObra } from '@/contexts/ObraContext';
 
 export default function NovoPedidoCompraPage() {
   const router = useRouter();
   const { showNotification } = useNotification();
+  const { obraSelecionada } = useObra();
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
@@ -304,7 +306,8 @@ export default function NovoPedidoCompraPage() {
       const pedido = await insertPedidoCompra(
         fornecedorId,
         dataCompra,
-        observacoes
+        observacoes,
+        obraSelecionada?.id || null
       );
       
       // 2. Adicionar os itens do pedido

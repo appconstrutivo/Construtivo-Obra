@@ -19,7 +19,7 @@ export function ObraProvider({ children }: { children: ReactNode }) {
   const [obraSelecionada, setObraSelecionada] = useState<Obra | null>(null);
   const [obras, setObras] = useState<Obra[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
 
   // Carregar obras do usuário
   const carregarObras = async () => {
@@ -35,21 +35,36 @@ export function ObraProvider({ children }: { children: ReactNode }) {
       const obrasData = await fetchObras();
       setObras(obrasData);
 
-      // Se não há obra selecionada e existem obras, selecionar a primeira
-      if (!obraSelecionada && obrasData.length > 0) {
-        // Tentar recuperar obra selecionada do localStorage
+      // Sempre tentar restaurar obra do localStorage quando as obras forem carregadas
+      if (obrasData.length > 0) {
         const obraSalvaId = localStorage.getItem('obraSelecionadaId');
         if (obraSalvaId) {
           const obraSalva = obrasData.find(o => o.id.toString() === obraSalvaId);
           if (obraSalva) {
+            // Restaurar obra salva do localStorage
             setObraSelecionada(obraSalva);
             setIsLoading(false);
             return;
           }
         }
-        // Se não encontrou obra salva, selecionar a primeira
-        setObraSelecionada(obrasData[0]);
-        localStorage.setItem('obraSelecionadaId', obrasData[0].id.toString());
+        // Se não encontrou obra salva, verificar se já há uma obra selecionada
+        // Se não houver, selecionar a primeira
+        setObraSelecionada(prevObra => {
+          if (!prevObra) {
+            const primeiraObra = obrasData[0];
+            localStorage.setItem('obraSelecionadaId', primeiraObra.id.toString());
+            return primeiraObra;
+          }
+          // Se já há uma obra selecionada, verificar se ela ainda existe na lista
+          const obraExiste = obrasData.find(o => o.id === prevObra.id);
+          if (!obraExiste) {
+            // Se a obra selecionada não existe mais, selecionar a primeira
+            const primeiraObra = obrasData[0];
+            localStorage.setItem('obraSelecionadaId', primeiraObra.id.toString());
+            return primeiraObra;
+          }
+          return prevObra;
+        });
       } else if (obrasData.length === 0) {
         setObraSelecionada(null);
         localStorage.removeItem('obraSelecionadaId');
@@ -57,6 +72,7 @@ export function ObraProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Erro ao carregar obras:', error);
       setObras([]);
+      setObraSelecionada(null);
     } finally {
       setIsLoading(false);
     }
@@ -79,34 +95,22 @@ export function ObraProvider({ children }: { children: ReactNode }) {
 
   // Carregar obras quando o usuário estiver autenticado
   useEffect(() => {
+    // Importante: durante o boot da autenticação, o `user` pode ser `null` temporariamente.
+    // Se removermos `obraSelecionadaId` nesse intervalo, a seleção "volta" após F5.
+    if (isAuthLoading) return;
+
     if (user) {
       carregarObras();
-    } else {
-      setObras([]);
-      setObraSelecionada(null);
-      setIsLoading(false);
+      return;
     }
-  }, [user]);
 
-  // Atualizar obra selecionada quando a lista de obras mudar
-  useEffect(() => {
-    if (obras.length > 0 && !obraSelecionada) {
-      const obraSalvaId = localStorage.getItem('obraSelecionadaId');
-      if (obraSalvaId) {
-        const obraSalva = obras.find(o => o.id.toString() === obraSalvaId);
-        if (obraSalva) {
-          setObraSelecionada(obraSalva);
-          return;
-        }
-      }
-      // Se não encontrou obra salva, selecionar a primeira
-      setObraSelecionada(obras[0]);
-      localStorage.setItem('obraSelecionadaId', obras[0].id.toString());
-    } else if (obras.length === 0) {
-      setObraSelecionada(null);
-      localStorage.removeItem('obraSelecionadaId');
-    }
-  }, [obras]);
+    // Aqui já é um estado estável: auth finalizou e não existe usuário.
+    setObras([]);
+    setObraSelecionada(null);
+    localStorage.removeItem('obraSelecionadaId');
+    setIsLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, isAuthLoading]);
 
   return (
     <ObraContext.Provider

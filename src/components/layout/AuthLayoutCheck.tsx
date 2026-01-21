@@ -1,7 +1,7 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
-import { ReactNode } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { ReactNode, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Sidebar from './Sidebar';
 import Header from './Header';
@@ -12,17 +12,26 @@ const authRoutes = ['/login', '/cadastro', '/recuperar-senha', '/redefinir-senha
 
 export function AuthLayoutCheck({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, isLoading } = useAuth();
   
   // Verificar se a rota atual é uma rota de autenticação
   const isAuthRoute = authRoutes.some(route => pathname.startsWith(route));
   
+  // Se a rota é protegida e a autenticação terminou sem usuário, redirecionar para login
+  useEffect(() => {
+    if (isAuthRoute) return;
+    if (!isLoading && !user) {
+      router.replace('/login');
+    }
+  }, [isAuthRoute, isLoading, user, router]);
+
   // Para rotas de autenticação, sempre renderizar sem layout
   if (isAuthRoute) {
     return <>{children}</>;
   }
   
-  // Para rotas protegidas, mostrar loading enquanto carrega ou não há usuário
+  // Para rotas protegidas, mostrar loading enquanto carrega (ou durante o redirect)
   if (isLoading || !user) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { fetchCentrosCusto, CentroCusto, deleteCentroCusto, atualizarTodosTotais } from '@/lib/supabase';
+import { useObra } from '@/contexts/ObraContext';
 import { 
   Eye, 
   Pencil, 
@@ -18,6 +19,7 @@ import EditarCentroCustoModal from '@/components/financeiro/EditarCentroCustoMod
 import ConfirmacaoModal from '@/components/ui/ConfirmacaoModal';
 
 export default function ControleFinanceiro() {
+  const { obraSelecionada } = useObra();
   const [centrosCusto, setCentrosCusto] = useState<CentroCusto[]>([]);
   const [mostrarBDI, setMostrarBDI] = useState(false);
   const [modalNovoAberto, setModalNovoAberto] = useState(false);
@@ -25,6 +27,7 @@ export default function ControleFinanceiro() {
   const [modalExcluirAberto, setModalExcluirAberto] = useState(false);
   const [centroCustoSelecionado, setCentroCustoSelecionado] = useState<CentroCusto | null>(null);
   const [carregando, setCarregando] = useState(true);
+  const [erroExcluir, setErroExcluir] = useState<string | null>(null);
 
   const totalOrcado = centrosCusto.reduce((acc, centro) => acc + (centro.orcado || 0), 0);
   const totalRealizado = centrosCusto.reduce((acc, centro) => acc + (centro.realizado || 0), 0);
@@ -35,14 +38,21 @@ export default function ControleFinanceiro() {
 
   useEffect(() => {
     carregarCentrosCusto();
-  }, []);
+  }, [obraSelecionada]);
 
   async function carregarCentrosCusto() {
+    if (!obraSelecionada) {
+      setCentrosCusto([]);
+      setCarregando(false);
+      return;
+    }
+
     try {
       setCarregando(true);
       
       // Primeiro carregar os dados sem atualizar totais para exibição rápida
-      const data = await fetchCentrosCusto();
+      // Filtrar por obra selecionada para garantir isolamento
+      const data = await fetchCentrosCusto(obraSelecionada.id);
       setCentrosCusto(data);
       setCarregando(false);
       
@@ -50,7 +60,7 @@ export default function ControleFinanceiro() {
       // Isso permite que a UI seja mostrada rapidamente
       atualizarTodosTotais().then(() => {
         // Recarregar dados após a atualização ser concluída
-        fetchCentrosCusto().then(dataAtualizada => {
+        fetchCentrosCusto(obraSelecionada.id).then(dataAtualizada => {
           setCentrosCusto(dataAtualizada);
         });
       });
@@ -67,8 +77,22 @@ export default function ControleFinanceiro() {
       await deleteCentroCusto(centroCustoSelecionado.id);
       await carregarCentrosCusto();
       setModalExcluirAberto(false);
+      setCentroCustoSelecionado(null);
     } catch (error) {
       console.error('Erro ao excluir centro de custo:', error);
+      const err = error as any;
+      // 23503 = violação de FK (há grupos/itens vinculados)
+      if (err?.code === '23503') {
+        setErroExcluir(
+          'Não foi possível excluir: este centro de custo possui vínculos (ex.: grupos/itens/lançamentos). Remova os registros vinculados antes de excluir.'
+        );
+      } else if (err?.code === 'RLS_DENY_DELETE') {
+        setErroExcluir(
+          'Exclusão não permitida para seu usuário. Apenas administradores podem excluir centros de custo.'
+        );
+      } else {
+        setErroExcluir('Não foi possível excluir o centro de custo. Verifique o console para detalhes.');
+      }
     }
   }
 
@@ -80,6 +104,7 @@ export default function ControleFinanceiro() {
   function abrirModalExcluir(centro: CentroCusto) {
     setCentroCustoSelecionado(centro);
     setModalExcluirAberto(true);
+    setErroExcluir(null);
   }
 
   function formatarValor(valor: number) {
@@ -276,14 +301,26 @@ export default function ControleFinanceiro() {
                             <Eye size={18} />
                           </Link>
                           <button 
-                            onClick={() => abrirModalEditar(centro)}
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              abrirModalEditar(centro);
+                            }}
                             className="text-amber-600 hover:text-amber-900"
+                            aria-label={`Editar centro de custo ${centro.descricao}`}
                           >
                             <Pencil size={18} />
                           </button>
                           <button 
-                            onClick={() => abrirModalExcluir(centro)}
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              abrirModalExcluir(centro);
+                            }}
                             className="text-red-600 hover:text-red-900"
+                            aria-label={`Excluir centro de custo ${centro.descricao}`}
                           >
                             <Trash2 size={18} />
                           </button>
@@ -324,10 +361,17 @@ export default function ControleFinanceiro() {
       {/* Modal de confirmação para excluir */}
       <ConfirmacaoModal
         isOpen={modalExcluirAberto}
-        onClose={() => setModalExcluirAberto(false)}
+        onClose={() => {
+          setModalExcluirAberto(false);
+          setErroExcluir(null);
+        }}
         onConfirm={handleExcluirCentroCusto}
         titulo="Excluir Centro de Custo"
-        mensagem={`Tem certeza que deseja excluir o centro de custo "${centroCustoSelecionado?.descricao}"? Esta ação não pode ser desfeita.`}
+        mensagem={
+          erroExcluir
+            ? erroExcluir
+            : `Tem certeza que deseja excluir o centro de custo "${centroCustoSelecionado?.descricao}"? Esta ação não pode ser desfeita.`
+        }
         confirmButtonText="Excluir"
         cancelButtonText="Cancelar"
       />

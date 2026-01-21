@@ -14,6 +14,7 @@ import {
 } from '@/lib/supabase';
 import { useNotification } from '@/components/ui/notification';
 import { formatarDataBrasil } from '@/lib/utils';
+import { useObra } from '@/contexts/ObraContext';
 
 type ItemCusto = {
   id: number;
@@ -53,6 +54,7 @@ type ParcelaPagamentoState = {
 export default function NovaNegociacaoPage() {
   const router = useRouter();
   const { showNotification } = useNotification();
+  const { obraSelecionada } = useObra();
   const [loading, setLoading] = useState(false);
   
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
@@ -68,8 +70,6 @@ export default function NovaNegociacaoPage() {
     descricao: '',
     data_inicio: '',
     data_fim: '',
-    obra: '',
-    engenheiro_responsavel: '',
   });
   
   const [itensNegociacao, setItensNegociacao] = useState<ItemNegociacaoState[]>([]);
@@ -283,6 +283,15 @@ export default function NovaNegociacaoPage() {
       return;
     }
     
+    if (!obraSelecionada) {
+      showNotification({
+        title: "Aviso",
+        message: "Por favor, selecione uma obra antes de criar o contrato",
+        type: "warning"
+      });
+      return;
+    }
+    
     if (itensNegociacao.length === 0) {
       showNotification({
         title: "Aviso",
@@ -295,15 +304,16 @@ export default function NovaNegociacaoPage() {
     setLoading(true);
     
     try {
-      // Criar a negociação
+      // Criar a negociação usando os dados da obra selecionada
       const negociacao = await insertNegociacao(
         formData.tipo,
         parseInt(formData.fornecedor_id),
         formData.descricao,
         formData.data_inicio,
         formData.data_fim || undefined,
-        formData.obra || undefined,
-        formData.engenheiro_responsavel || undefined
+        obraSelecionada.nome || undefined,
+        obraSelecionada.responsavel_tecnico || undefined,
+        obraSelecionada.id || null
       );
       
       // Criar os itens da negociação
@@ -477,35 +487,27 @@ export default function NovaNegociacaoPage() {
               />
             </div>
 
-            <div className="space-y-2">
-              <label htmlFor="obra" className="block text-sm font-medium">
-                Obra
-              </label>
-              <input
-                type="text"
-                id="obra"
-                name="obra"
-                value={formData.obra}
-                onChange={handleFormChange}
-                placeholder="Código ou nome da obra"
-                className="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+            {obraSelecionada && (
+              <>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-500">
+                    Obra
+                  </label>
+                  <div className="w-full p-2.5 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
+                    {obraSelecionada.nome || 'Não informado'}
+                  </div>
+                </div>
 
-            <div className="space-y-2">
-              <label htmlFor="engenheiro_responsavel" className="block text-sm font-medium">
-                Engenheiro Responsável
-              </label>
-              <input
-                type="text"
-                id="engenheiro_responsavel"
-                name="engenheiro_responsavel"
-                value={formData.engenheiro_responsavel}
-                onChange={handleFormChange}
-                placeholder="Nome do engenheiro responsável"
-                className="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-500">
+                    Engenheiro Responsável
+                  </label>
+                  <div className="w-full p-2.5 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
+                    {obraSelecionada.responsavel_tecnico || 'Não informado'}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

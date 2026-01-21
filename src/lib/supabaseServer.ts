@@ -1,8 +1,14 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zgoafwgxenhwhkxdkwox.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpnb2Fmd2d4ZW5od2hreGRrd294Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3MDYxMDcsImV4cCI6MjA4NDI4MjEwN30.Fdlx_f8_fP1KmaBvAATb4PyNSEC8Rtd7c6wGURZIMow'
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error(
+    'Supabase env vars não configuradas. Defina NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY.'
+  )
+}
 
 export function createMiddlewareClient(request: NextRequest, response: NextResponse) {
   return createServerClient(supabaseUrl, supabaseAnonKey, {

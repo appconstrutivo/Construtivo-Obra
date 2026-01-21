@@ -29,7 +29,7 @@ E o arquivo `.env.local` **não existia**, então o sistema usava os valores de 
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://zgoafwgxenhwhkxdkwox.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpnb2Fmd2d4ZW5od2hreGRrd294Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3MDYxMDcsImV4cCI6MjA4NDI4MjEwN30.Fdlx_f8_fP1KmaBvAATb4PyNSEC8Rtd7c6wGURZIMow
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<cole_aqui_a_sua_anon_key_do_supabase>
 ```
 
 **Projeto**: Construtivo Obra (`zgoafwgxenhwhkxdkwox`)

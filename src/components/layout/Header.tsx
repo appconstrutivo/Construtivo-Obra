@@ -36,6 +36,12 @@ export default function Header() {
   const basePathname = pathname.split('?')[0]; // Remove query parameters
   const pageTitle = routeTitles[basePathname] || 'Sistema de Controle de Obras';
 
+  // Verificar se está na página de configurações (não mostrar seletor)
+  const isConfiguracoesPage = pathname === '/configuracoes';
+  
+  // Verificar se está na página de dashboard (seletor habilitado apenas no dashboard)
+  const isDashboardPage = basePathname === '/dashboard' || basePathname === '/';
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     // Implementar lógica de busca
@@ -59,11 +65,15 @@ export default function Header() {
     };
   }, [menuRef, obraMenuRef]);
 
+  // Fechar menu de obras quando sair do dashboard
+  useEffect(() => {
+    if (!isDashboardPage) {
+      setObraMenuOpen(false);
+    }
+  }, [isDashboardPage]);
+
   // Obter o nome de usuário para exibição
   const displayName = user?.user_metadata?.nome || user?.email?.split('@')[0] || 'Usuário';
-
-  // Verificar se está na página de configurações (não mostrar seletor)
-  const isConfiguracoesPage = pathname === '/configuracoes';
 
   return (
     <header className="bg-blue-600 text-white py-3 px-6 flex items-center justify-between">
@@ -74,9 +84,19 @@ export default function Header() {
         {!isConfiguracoesPage && (
           <div className="relative" ref={obraMenuRef}>
             <button
-              onClick={() => setObraMenuOpen(!obraMenuOpen)}
-              className="flex items-center gap-2 px-3 py-1.5 bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors text-sm font-medium min-w-[200px] justify-between"
-              disabled={isLoadingObras || obras.length === 0}
+              onClick={() => {
+                // Só permitir abrir o menu se estiver no dashboard
+                if (isDashboardPage) {
+                  setObraMenuOpen(!obraMenuOpen);
+                }
+              }}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium min-w-[200px] justify-between ${
+                isDashboardPage 
+                  ? 'bg-blue-700 hover:bg-blue-800 cursor-pointer' 
+                  : 'bg-blue-700/50 cursor-not-allowed opacity-75'
+              }`}
+              disabled={isLoadingObras || obras.length === 0 || !isDashboardPage}
+              title={!isDashboardPage ? 'Alterar obra apenas disponível no Dashboard' : ''}
             >
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <Building2 size={18} className="flex-shrink-0" />
@@ -90,10 +110,13 @@ export default function Header() {
                         : 'Selecionar obra'}
                 </span>
               </div>
-              <ChevronDown size={16} className={`flex-shrink-0 transition-transform ${obraMenuOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown 
+                size={16} 
+                className={`flex-shrink-0 transition-transform ${obraMenuOpen ? 'rotate-180' : ''} ${!isDashboardPage ? 'opacity-50' : ''}`} 
+              />
             </button>
 
-            {obraMenuOpen && obras.length > 0 && (
+            {obraMenuOpen && obras.length > 0 && isDashboardPage && (
               <div className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg py-1 z-20 max-h-96 overflow-y-auto">
                 {obras.map((obra) => (
                   <button
@@ -173,7 +196,7 @@ export default function Header() {
               
               <button 
                 onClick={() => {
-                  signOut();
+                  void signOut();
                   setMenuOpen(false);
                 }} 
                 className="flex items-center w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"

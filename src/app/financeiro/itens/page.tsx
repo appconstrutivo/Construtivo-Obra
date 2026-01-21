@@ -66,13 +66,20 @@ export default function Itens() {
   const [modalEditarCustoAberto, setModalEditarCustoAberto] = useState(false);
   const [modalExcluirAberto, setModalExcluirAberto] = useState(false);
   const [modalRelacionamentosAberto, setModalRelacionamentosAberto] = useState(false);
+  const [modalErroExcluirAberto, setModalErroExcluirAberto] = useState(false);
   
   // Estados para o item selecionado
   const [itemOrcamentoSelecionado, setItemOrcamentoSelecionado] = useState<ItemOrcamento | null>(null);
   const [itemCustoSelecionado, setItemCustoSelecionado] = useState<ItemCusto | null>(null);
+  const [tipoItemExcluir, setTipoItemExcluir] = useState<'orcamento' | 'custo' | null>(null);
   const [itemRelacionamentosId, setItemRelacionamentosId] = useState<number | null>(null);
   const [itemRelacionamentosCodigo, setItemRelacionamentosCodigo] = useState<string>('');
   const [itemRelacionamentosDescricao, setItemRelacionamentosDescricao] = useState<string>('');
+  const [erroExcluirTitulo, setErroExcluirTitulo] = useState<string>('');
+  const [erroExcluirMensagem, setErroExcluirMensagem] = useState<string>('');
+  const [erroExcluirConfirmText, setErroExcluirConfirmText] = useState<string>('OK');
+  const [erroExcluirCancelText, setErroExcluirCancelText] = useState<string>('Fechar');
+  const [erroExcluirAcao, setErroExcluirAcao] = useState<'ver_vinculos' | null>(null);
   
   // Totais
   const totalOrcamento = itensOrcamento.reduce((acc, item) => acc + (item.total || 0), 0);
@@ -97,12 +104,14 @@ export default function Itens() {
       try {
         setCarregando(true);
         
-        // Buscar informações do grupo selecionado diretamente (filtrado por obra)
+        // Buscar informações do grupo selecionado diretamente
+        // Filtrar por obra para garantir isolamento por obra selecionada
         let query = supabase
           .from('grupos')
           .select('*')
           .eq('id', grupoSelecionadoId);
         
+        // Se há obra selecionada, filtrar por ela para garantir isolamento
         if (obraSelecionada) {
           query = query.eq('obra_id', obraSelecionada.id);
         }
@@ -111,11 +120,22 @@ export default function Itens() {
         
         if (error) {
           console.error('Erro ao buscar grupo:', error);
+          // Se não encontrou e há obra selecionada, pode ser que o grupo não seja desta obra
+          if (obraSelecionada) {
+            console.error('Grupo não encontrado para a obra selecionada');
+          }
           return;
         }
         
         if (grupoData) {
           const grupo = grupoData as Grupo;
+          
+          // Verificar se o grupo pertence à obra selecionada (se houver obra selecionada)
+          if (obraSelecionada && grupo.obra_id !== obraSelecionada.id) {
+            console.error('Grupo não pertence à obra selecionada');
+            return;
+          }
+          
           setGrupoSelecionado(grupo);
           
           // Buscar todos os grupos do mesmo centro de custo
@@ -200,6 +220,7 @@ export default function Itens() {
   function abrirModalExcluirItemOrcamento(item: ItemOrcamento) {
     setItemOrcamentoSelecionado(item);
     setItemCustoSelecionado(null);
+    setTipoItemExcluir('orcamento');
     setModalExcluirAberto(true);
   }
 
@@ -214,8 +235,24 @@ export default function Itens() {
       }
       
       setModalExcluirAberto(false);
+      setTipoItemExcluir(null);
+      setItemOrcamentoSelecionado(null);
     } catch (error) {
       console.error('Erro ao excluir item de orçamento:', error);
+      const err = error as any;
+      // 23503 = violação de FK (registro referenciado por outra tabela)
+      if (err?.code === '23503') {
+        setModalExcluirAberto(false);
+        setTipoItemExcluir(null);
+        setErroExcluirTitulo('Não foi possível excluir o item');
+        setErroExcluirMensagem(
+          'Este item está vinculado a outros registros (ex.: contrato/negociação, pedidos, medições). Remova os vínculos antes de excluir.'
+        );
+        setErroExcluirConfirmText('OK');
+        setErroExcluirCancelText('Fechar');
+        setErroExcluirAcao(null);
+        setModalErroExcluirAberto(true);
+      }
     }
   }
 
@@ -239,6 +276,7 @@ export default function Itens() {
   function abrirModalExcluirItemCusto(item: ItemCusto) {
     setItemCustoSelecionado(item);
     setItemOrcamentoSelecionado(null);
+    setTipoItemExcluir('custo');
     setModalExcluirAberto(true);
   }
 
@@ -260,8 +298,24 @@ export default function Itens() {
       }
       
       setModalExcluirAberto(false);
+      setTipoItemExcluir(null);
+      setItemCustoSelecionado(null);
     } catch (error) {
       console.error('Erro ao excluir item de custo:', error);
+      const err = error as any;
+      // 23503 = violação de FK (registro referenciado por outra tabela, ex.: itens_negociacao)
+      if (err?.code === '23503') {
+        setModalExcluirAberto(false);
+        setTipoItemExcluir(null);
+        setErroExcluirTitulo('Não foi possível excluir o item');
+        setErroExcluirMensagem(
+          'Este item está vinculado a uma negociação/contrato (ou outro lançamento). Para excluir, primeiro remova o vínculo. Você pode ver os vínculos agora.'
+        );
+        setErroExcluirConfirmText('Ver vínculos');
+        setErroExcluirCancelText('Fechar');
+        setErroExcluirAcao('ver_vinculos');
+        setModalErroExcluirAberto(true);
+      }
     }
   }
 
@@ -793,12 +847,40 @@ export default function Itens() {
       {/* Modal de confirmação para excluir */}
       <ConfirmacaoModal
         isOpen={modalExcluirAberto}
-        onClose={() => setModalExcluirAberto(false)}
-        onConfirm={itemOrcamentoSelecionado ? handleExcluirItemOrcamento : handleExcluirItemCusto}
-        titulo={`Excluir Item ${itemOrcamentoSelecionado ? 'de Orçamento' : 'de Custo'}`}
+        onClose={() => {
+          setModalExcluirAberto(false);
+          setTipoItemExcluir(null);
+          setItemOrcamentoSelecionado(null);
+          setItemCustoSelecionado(null);
+        }}
+        onConfirm={() => {
+          if (tipoItemExcluir === 'orcamento') return handleExcluirItemOrcamento();
+          if (tipoItemExcluir === 'custo') return handleExcluirItemCusto();
+        }}
+        titulo={`Excluir Item ${tipoItemExcluir === 'orcamento' ? 'de Orçamento' : 'de Custo'}`}
         mensagem={`Tem certeza que deseja excluir o item "${itemOrcamentoSelecionado?.descricao || itemCustoSelecionado?.descricao}"? Esta ação não pode ser desfeita.`}
         confirmButtonText="Excluir"
         cancelButtonText="Cancelar"
+      />
+
+      {/* Modal de erro ao excluir (ex.: item vinculado por FK) */}
+      <ConfirmacaoModal
+        isOpen={modalErroExcluirAberto}
+        onClose={() => {
+          setModalErroExcluirAberto(false);
+          setErroExcluirAcao(null);
+        }}
+        onConfirm={() => {
+          if (erroExcluirAcao === 'ver_vinculos' && itemCustoSelecionado) {
+            abrirModalRelacionamentos(itemCustoSelecionado);
+          }
+          setModalErroExcluirAberto(false);
+          setErroExcluirAcao(null);
+        }}
+        titulo={erroExcluirTitulo || 'Atenção'}
+        mensagem={erroExcluirMensagem || 'Não foi possível concluir a operação.'}
+        confirmButtonText={erroExcluirConfirmText}
+        cancelButtonText={erroExcluirCancelText}
       />
     </main>
   );

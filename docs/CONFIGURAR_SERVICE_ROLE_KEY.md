@@ -30,7 +30,7 @@ A **Service Role Key** é uma chave secreta que:
 3. Adicione a seguinte linha:
 
 ```env
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpnb2Fmd2d4ZW5od2hreGRrd294Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODcwNjEwNywiZXhwIjoyMDg0MjgyMTA3fQ.rNfcm1w9O1ln53xblL16Otib_JVeiQVYOXIbGEe83Ks
+SUPABASE_SERVICE_ROLE_KEY=<cole_aqui_a_sua_service_role_key_do_supabase>
 ```
 
 ### 2. Verificar se o arquivo está no `.gitignore`
@@ -71,7 +71,7 @@ Para configurar na Vercel:
 3. Vá em **Settings** > **Environment Variables**
 4. Adicione a variável:
    - **Name**: `SUPABASE_SERVICE_ROLE_KEY`
-   - **Value**: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpnb2Fmd2d4ZW5od2hreGRrd294Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODcwNjEwNywiZXhwIjoyMDg0MjgyMTA3fQ.rNfcm1w9O1ln53xblL16Otib_JVeiQVYOXIbGEe83Ks`
+   - **Value**: `<cole_aqui_a_sua_service_role_key_do_supabase>`
    - **Environment**: Production, Preview, Development (marque todos)
 5. Clique em **Save**
 6. Faça um novo deploy para aplicar as mudanças
@@ -101,10 +101,10 @@ Seu arquivo `.env.local` deve ter esta estrutura:
 ```env
 # Configurações do Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://zgoafwgxenhwhkxdkwox.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpnb2Fmd2d4ZW5od2hreGRrd294Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3MDYxMDcsImV4cCI6MjA4NDI4MjEwN30.Fdlx_f8_fP1KmaBvAATb4PyNSEC8Rtd7c6wGURZIMow
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<cole_aqui_a_sua_anon_key_do_supabase>
 
 # Service Role Key (SECRET - apenas para uso no servidor)
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpnb2Fmd2d4ZW5od2hreGRrd294Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODcwNjEwNywiZXhwIjoyMDg0MjgyMTA3fQ.rNfcm1w9O1ln53xblL16Otib_JVeiQVYOXIbGEe83Ks
+SUPABASE_SERVICE_ROLE_KEY=<cole_aqui_a_sua_service_role_key_do_supabase>
 
 # Outras configurações
 NEXT_PUBLIC_APP_URL=http://localhost:3001

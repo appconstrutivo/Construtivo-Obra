@@ -29,6 +29,75 @@ export default function EditarFornecedorPage({ params }: any) {
     email: ''
   });
 
+  const formatarDocumento = (valor: string) => {
+    // Permite a palavra "isento" (case-insensitive)
+    const valorLower = valor.toLowerCase().trim();
+    if (valorLower === 'isento' || (valorLower.startsWith('isento') && !/\d/.test(valor))) {
+      return 'ISENTO';
+    }
+
+    // Remove todos os caracteres não numéricos
+    const numeros = valor.replace(/\D/g, '');
+
+    // Se não houver números, retorna vazio
+    if (!numeros) return '';
+
+    // CPF: 11 dígitos - formato 000.000.000-00
+    if (numeros.length <= 11) {
+      return numeros
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+    }
+    
+    // CNPJ: 14 dígitos - formato 00.000.000/0000-00
+    if (numeros.length <= 14) {
+      return numeros
+        .replace(/(\d{2})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1/$2')
+        .replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+    }
+
+    // Se exceder 14 dígitos, mantém apenas os primeiros 14 formatados
+    const numerosLimitados = numeros.substring(0, 14);
+    return numerosLimitados
+      .replace(/(\d{2})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1/$2')
+      .replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+  };
+
+  const formatarTelefone = (valor: string) => {
+    // Remove todos os caracteres não numéricos
+    const numeros = valor.replace(/\D/g, '');
+
+    // Se não houver números, retorna vazio
+    if (!numeros) return '';
+
+    // Telefone fixo: 10 dígitos - formato (00) 0000-0000
+    if (numeros.length <= 10) {
+      return numeros
+        .replace(/(\d{2})(\d)/, '($1) $2')
+        .replace(/(\d{4})(\d)/, '$1-$2');
+    }
+
+    // Celular: 11 dígitos - formato (00) 00000-0000
+    if (numeros.length <= 11) {
+      return numeros
+        .replace(/(\d{2})(\d)/, '($1) $2')
+        .replace(/(\d{5})(\d)/, '$1-$2')
+        .replace(/(-\d{4})\d+?$/, '$1');
+    }
+
+    // Se exceder 11 dígitos, mantém apenas os primeiros 11 formatados
+    const numerosLimitados = numeros.substring(0, 11);
+    return numerosLimitados
+      .replace(/(\d{2})(\d)/, '($1) $2')
+      .replace(/(\d{5})(\d)/, '$1-$2')
+      .replace(/(-\d{4})\d+?$/, '$1');
+  };
+
   useEffect(() => {
     const carregarFornecedor = async () => {
       setLoadingFornecedor(true);
@@ -37,9 +106,9 @@ export default function EditarFornecedorPage({ params }: any) {
         if (fornecedor) {
           setFormData({
             nome: fornecedor.nome,
-            documento: fornecedor.documento,
+            documento: fornecedor.documento ? formatarDocumento(fornecedor.documento) : '',
             contato: fornecedor.contato || '',
-            telefone: fornecedor.telefone || '',
+            telefone: fornecedor.telefone ? formatarTelefone(fornecedor.telefone) : '',
             email: fornecedor.email || ''
           });
         } else {
@@ -60,7 +129,16 @@ export default function EditarFornecedorPage({ params }: any) {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    let finalValue = value;
+
+    // Aplicar máscaras específicas
+    if (name === 'documento') {
+      finalValue = formatarDocumento(value);
+    } else if (name === 'telefone') {
+      finalValue = formatarTelefone(value);
+    }
+
+    setFormData(prev => ({ ...prev, [name]: finalValue }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -160,7 +238,7 @@ export default function EditarFornecedorPage({ params }: any) {
                 name="documento"
                 value={formData.documento}
                 onChange={handleChange}
-                placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                placeholder="000.000.000-00, 00.000.000/0000-00 ou ISENTO"
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
@@ -235,7 +313,8 @@ export default function EditarFornecedorPage({ params }: any) {
         <h2 className="text-lg font-semibold mb-3">Informações Importantes</h2>
         <ul className="list-disc pl-5 space-y-2 text-gray-600">
           <li>Os campos marcados com <span className="text-red-500">*</span> são obrigatórios.</li>
-          <li>O CPF/CNPJ deve ser informado sem pontos ou traços.</li>
+          <li>O CPF/CNPJ será formatado automaticamente. Você pode digitar apenas os números ou digitar "ISENTO" quando aplicável.</li>
+          <li>O telefone/celular será formatado automaticamente conforme o número de dígitos informados.</li>
           <li>Certifique-se de informar um e-mail válido para comunicações.</li>
         </ul>
       </div>
