@@ -19,6 +19,7 @@ const routeTitles: Record<string, string> = {
   '/contas-a-pagar': 'CONTAS A PAGAR',
   '/negociacoes': 'Contratos',
   '/fornecedores': 'Fornecedores',
+  '/relatorios': 'Relatórios',
   '/plano': 'Planos de Assinatura'
 };
 
@@ -31,14 +32,14 @@ export default function Header() {
   const { obraSelecionada, obras, selecionarObra, isLoading: isLoadingObras } = useObra();
   const menuRef = useRef<HTMLDivElement>(null);
   const obraMenuRef = useRef<HTMLDivElement>(null);
-  
+
   // Verifica a rota atual e suas partes para determinar o título
   const basePathname = pathname.split('?')[0]; // Remove query parameters
   const pageTitle = routeTitles[basePathname] || 'Sistema de Controle de Obras';
 
   // Verificar se está na página de configurações (não mostrar seletor)
   const isConfiguracoesPage = pathname === '/configuracoes';
-  
+
   // Verificar se está na página de dashboard (seletor habilitado apenas no dashboard)
   const isDashboardPage = basePathname === '/dashboard' || basePathname === '/';
 
@@ -78,7 +79,7 @@ export default function Header() {
   return (
     <header className="bg-blue-600 text-white py-3 px-6 flex items-center justify-between">
       <h1 className="text-xl font-semibold">{pageTitle}</h1>
-      
+
       <div className="flex items-center space-x-4">
         {/* Seletor de Obras - não exibir na página de configurações */}
         {!isConfiguracoesPage && (
@@ -90,29 +91,28 @@ export default function Header() {
                   setObraMenuOpen(!obraMenuOpen);
                 }
               }}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium min-w-[200px] justify-between ${
-                isDashboardPage 
-                  ? 'bg-blue-700 hover:bg-blue-800 cursor-pointer' 
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium min-w-[200px] justify-between ${isDashboardPage
+                  ? 'bg-blue-700 hover:bg-blue-800 cursor-pointer'
                   : 'bg-blue-700/50 cursor-not-allowed opacity-75'
-              }`}
+                }`}
               disabled={isLoadingObras || obras.length === 0 || !isDashboardPage}
               title={!isDashboardPage ? 'Alterar obra apenas disponível no Dashboard' : ''}
             >
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <Building2 size={18} className="flex-shrink-0" />
                 <span className="truncate">
-                  {isLoadingObras 
-                    ? 'Carregando...' 
-                    : obraSelecionada 
-                      ? obraSelecionada.nome 
-                      : obras.length === 0 
-                        ? 'Nenhuma obra' 
+                  {isLoadingObras
+                    ? 'Carregando...'
+                    : obraSelecionada
+                      ? obraSelecionada.nome
+                      : obras.length === 0
+                        ? 'Nenhuma obra'
                         : 'Selecionar obra'}
                 </span>
               </div>
-              <ChevronDown 
-                size={16} 
-                className={`flex-shrink-0 transition-transform ${obraMenuOpen ? 'rotate-180' : ''} ${!isDashboardPage ? 'opacity-50' : ''}`} 
+              <ChevronDown
+                size={16}
+                className={`flex-shrink-0 transition-transform ${obraMenuOpen ? 'rotate-180' : ''} ${!isDashboardPage ? 'opacity-50' : ''}`}
               />
             </button>
 
@@ -125,11 +125,10 @@ export default function Header() {
                       selecionarObra(obra);
                       setObraMenuOpen(false);
                     }}
-                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${
-                      obraSelecionada?.id === obra.id 
-                        ? 'bg-blue-50 text-blue-700 font-medium' 
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${obraSelecionada?.id === obra.id
+                        ? 'bg-blue-50 text-blue-700 font-medium'
                         : 'text-gray-700'
-                    }`}
+                      }`}
                   >
                     <div className="font-medium truncate">{obra.nome}</div>
                     {obra.endereco && (
@@ -141,7 +140,7 @@ export default function Header() {
             )}
           </div>
         )}
-        
+
         <form onSubmit={handleSearch} className="relative hidden md:block">
           <input
             type="text"
@@ -152,15 +151,15 @@ export default function Header() {
           />
           <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-300" />
         </form>
-        
+
         <button className="p-1.5 rounded-full hover:bg-blue-700 transition-colors relative">
           <Bell size={20} />
           <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
         </button>
-        
+
         <div className="relative" ref={menuRef}>
-          <button 
-            onClick={() => setMenuOpen(!menuOpen)} 
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
             className="flex items-center gap-2 p-1 rounded-full hover:bg-blue-700 transition-colors"
           >
             <UserCircle size={28} />
@@ -175,30 +174,30 @@ export default function Header() {
                 <p className="text-sm font-medium text-gray-900 truncate">{displayName}</p>
                 <p className="text-xs text-gray-500 truncate">{user?.email}</p>
               </div>
-              
-              <Link 
-                href="/perfil" 
+
+              <Link
+                href="/perfil"
                 className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 onClick={() => setMenuOpen(false)}
               >
                 <User size={16} className="mr-2" />
                 Meu Perfil
               </Link>
-              
-              <Link 
-                href="/configuracoes" 
+
+              <Link
+                href="/configuracoes"
                 className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 onClick={() => setMenuOpen(false)}
               >
                 <Settings size={16} className="mr-2" />
                 Configurações
               </Link>
-              
-              <button 
+
+              <button
                 onClick={() => {
                   void signOut();
                   setMenuOpen(false);
-                }} 
+                }}
                 className="flex items-center w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
               >
                 <LogOut size={16} className="mr-2" />

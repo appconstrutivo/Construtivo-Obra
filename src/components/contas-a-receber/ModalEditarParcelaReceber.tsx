@@ -1,26 +1,65 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, DollarSign, Calendar, FileText, Tag } from 'lucide-react';
-import { insertParcelaReceber } from '@/lib/supabase-clientes';
-import { Cliente } from '@/lib/supabase';
+import { updateParcelaReceber } from '@/lib/supabase-clientes';
+import { Cliente, ParcelaReceber } from '@/lib/supabase';
 
-interface ModalNovaParcelaReceberProps {
+interface ParcelaComCliente extends ParcelaReceber {
+  cliente?: Cliente | null;
+}
+
+interface ModalEditarParcelaReceberProps {
+  parcela: ParcelaComCliente;
   clientes: Cliente[];
-  obraId?: number | null;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export default function ModalNovaParcelaReceber({ clientes, obraId, onClose, onSuccess }: ModalNovaParcelaReceberProps) {
-  const [clienteId, setClienteId] = useState<number | ''>('');
-  const [descricao, setDescricao] = useState('');
-  const [valor, setValor] = useState('');
-  const [dataVencimento, setDataVencimento] = useState('');
-  const [categoria, setCategoria] = useState('');
-  const [numeroDocumento, setNumeroDocumento] = useState('');
-  const [observacoes, setObservacoes] = useState('');
+export default function ModalEditarParcelaReceber({
+  parcela,
+  clientes,
+  onClose,
+  onSuccess
+}: ModalEditarParcelaReceberProps) {
+  const [clienteId, setClienteId] = useState<number | ''>(parcela.cliente_id);
+  const [descricao, setDescricao] = useState(parcela.descricao || '');
+  const [valor, setValor] = useState(
+    parcela.valor != null
+      ? Number(parcela.valor).toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })
+      : ''
+  );
+  const [dataVencimento, setDataVencimento] = useState(
+    parcela.data_vencimento ? parcela.data_vencimento.split('T')[0] : ''
+  );
+  const [categoria, setCategoria] = useState(parcela.categoria || '');
+  const [numeroDocumento, setNumeroDocumento] = useState(
+    parcela.numero_documento || ''
+  );
+  const [observacoes, setObservacoes] = useState(parcela.observacoes || '');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setClienteId(parcela.cliente_id);
+    setDescricao(parcela.descricao || '');
+    setValor(
+      parcela.valor != null
+        ? Number(parcela.valor).toLocaleString('pt-BR', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        })
+        : ''
+    );
+    setDataVencimento(
+      parcela.data_vencimento ? parcela.data_vencimento.split('T')[0] : ''
+    );
+    setCategoria(parcela.categoria || '');
+    setNumeroDocumento(parcela.numero_documento || '');
+    setObservacoes(parcela.observacoes || '');
+  }, [parcela]);
 
   const categoriasPredefinidas = [
     'Medição',
@@ -34,12 +73,8 @@ export default function ModalNovaParcelaReceber({ clientes, obraId, onClose, onS
   ];
 
   const formatarValor = (valor: string) => {
-    // Remove tudo que não é número
     const numeros = valor.replace(/\D/g, '');
-
-    // Converte para número e formata
     const numero = Number(numeros) / 100;
-
     return numero.toLocaleString('pt-BR', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
@@ -74,22 +109,22 @@ export default function ModalNovaParcelaReceber({ clientes, obraId, onClose, onS
     setLoading(true);
 
     try {
-      await insertParcelaReceber(
+      await updateParcelaReceber(
+        parcela.id,
         Number(clienteId),
         descricao,
         valorNumerico,
         dataVencimento,
         categoria || undefined,
         numeroDocumento || undefined,
-        observacoes || undefined,
-        obraId ?? undefined
+        observacoes || undefined
       );
 
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('Erro ao cadastrar parcela:', error);
-      alert('Erro ao cadastrar lançamento. Tente novamente.');
+      console.error('Erro ao atualizar parcela:', error);
+      alert('Erro ao atualizar lançamento. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -101,7 +136,7 @@ export default function ModalNovaParcelaReceber({ clientes, obraId, onClose, onS
         <div className="sticky top-0 bg-white p-6 border-b flex items-center justify-between">
           <div className="flex items-center gap-3">
             <DollarSign className="text-primary" size={24} />
-            <h2 className="text-xl font-bold text-gray-900">Novo Lançamento a Receber</h2>
+            <h2 className="text-xl font-bold text-gray-900">Editar Lançamento</h2>
           </div>
           <button
             onClick={onClose}
@@ -119,7 +154,9 @@ export default function ModalNovaParcelaReceber({ clientes, obraId, onClose, onS
             </label>
             <select
               value={clienteId}
-              onChange={(e) => setClienteId(e.target.value ? Number(e.target.value) : '')}
+              onChange={(e) =>
+                setClienteId(e.target.value ? Number(e.target.value) : '')
+              }
               className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
               required
             >
@@ -130,11 +167,6 @@ export default function ModalNovaParcelaReceber({ clientes, obraId, onClose, onS
                 </option>
               ))}
             </select>
-            {clientes.length === 0 && (
-              <p className="text-sm text-amber-600 mt-1">
-                Nenhum cliente cadastrado. Cadastre um cliente primeiro.
-              </p>
-            )}
           </div>
 
           {/* Descrição */}
@@ -236,15 +268,16 @@ export default function ModalNovaParcelaReceber({ clientes, obraId, onClose, onS
           {/* Resumo */}
           {valor && clienteId && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h4 className="font-medium text-blue-900 mb-2">Resumo do Lançamento</h4>
+              <h4 className="font-medium text-blue-900 mb-2">
+                Resumo do Lançamento
+              </h4>
               <div className="space-y-1 text-sm text-blue-800">
                 <p>
                   <span className="font-medium">Cliente:</span>{' '}
-                  {clientes.find(c => c.id === Number(clienteId))?.nome}
+                  {clientes.find((c) => c.id === Number(clienteId))?.nome}
                 </p>
                 <p>
-                  <span className="font-medium">Valor:</span>{' '}
-                  R$ {valor}
+                  <span className="font-medium">Valor:</span> R$ {valor}
                 </p>
                 {dataVencimento && (
                   <p>
@@ -274,9 +307,9 @@ export default function ModalNovaParcelaReceber({ clientes, obraId, onClose, onS
             <button
               type="submit"
               className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors disabled:bg-gray-400"
-              disabled={loading || clientes.length === 0}
+              disabled={loading}
             >
-              {loading ? 'Cadastrando...' : 'Cadastrar Lançamento'}
+              {loading ? 'Salvando...' : 'Salvar Alterações'}
             </button>
           </div>
         </form>

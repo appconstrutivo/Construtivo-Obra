@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { TrendingUp, Calendar, DollarSign, AlertCircle, Plus, Users, Filter, X, CheckCircle, Clock, Ban } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { TrendingUp, Calendar, DollarSign, AlertCircle, Plus, Users, Filter, X, CheckCircle, Clock, Ban, Pencil } from 'lucide-react';
 import { fetchParcelasReceber, fetchClientes, marcarParcelaComoRecebida, cancelarParcelaReceber, deleteParcelaReceber, atualizarParcelasAtrasadas } from '@/lib/supabase-clientes';
 import { useObra } from '@/contexts/ObraContext';
 import { Cliente, ParcelaReceber } from '@/lib/supabase';
 import ModalNovoCliente from '@/components/contas-a-receber/ModalNovoCliente';
 import ModalNovaParcelaReceber from '@/components/contas-a-receber/ModalNovaParcelaReceber';
+import ModalEditarParcelaReceber from '@/components/contas-a-receber/ModalEditarParcelaReceber';
 
 interface ParcelaComCliente extends ParcelaReceber {
   cliente: Cliente;
@@ -25,6 +26,8 @@ export default function ContasReceberPage() {
   const [parcelas, setParcelas] = useState<ParcelaComCliente[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const hasLoadedOnceRef = useRef(false);
   const [estatisticas, setEstatisticas] = useState<EstatisticasReceber>({
     vencidas: 0,
     proximos7Dias: 0,
@@ -44,7 +47,9 @@ export default function ContasReceberPage() {
   const [modalClienteAberto, setModalClienteAberto] = useState(false);
   const [modalParcelaAberto, setModalParcelaAberto] = useState(false);
   const [modalRecebimentoAberto, setModalRecebimentoAberto] = useState(false);
+  const [modalEditarParcelaAberto, setModalEditarParcelaAberto] = useState(false);
   const [parcelaSelecionada, setParcelaSelecionada] = useState<ParcelaComCliente | null>(null);
+  const [parcelaParaEditar, setParcelaParaEditar] = useState<ParcelaComCliente | null>(null);
 
   // Dados do recebimento
   const [dataRecebimento, setDataRecebimento] = useState('');
@@ -52,29 +57,33 @@ export default function ContasReceberPage() {
 
   useEffect(() => {
     carregarDados();
-  }, [obraSelecionada]);
+  }, [obraSelecionada?.id]);
 
   const carregarDados = async () => {
-    setLoading(true);
+    const isInitial = !hasLoadedOnceRef.current;
+    if (isInitial) {
+      setLoading(true);
+    } else {
+      setRefreshing(true);
+    }
     try {
-      // Atualizar status de parcelas atrasadas
       await atualizarParcelasAtrasadas();
-
-      // Buscar parcelas e clientes
       const [parcelasData, clientesData] = await Promise.all([
         fetchParcelasReceber(obraSelecionada?.id),
         fetchClientes()
       ]);
-
       setParcelas(parcelasData as ParcelaComCliente[]);
       setClientes(clientesData);
-
-      // Calcular estatísticas
       calcularEstatisticas(parcelasData as ParcelaComCliente[]);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {
-      setLoading(false);
+      if (isInitial) {
+        hasLoadedOnceRef.current = true;
+        setLoading(false);
+      } else {
+        setRefreshing(false);
+      }
     }
   };
 
@@ -202,24 +211,24 @@ export default function ContasReceberPage() {
 
   const handleExcluir = async (id: number) => {
     const parcela = parcelas.find(p => p.id === id);
-    
+
     let mensagemConfirmacao = 'Deseja realmente excluir esta conta a receber?\n\n';
-    
+
     if (parcela?.status === 'Recebido') {
       mensagemConfirmacao += `⚠️ ATENÇÃO: Esta conta está marcada como RECEBIDA.\n`;
       mensagemConfirmacao += `O valor de ${formatarValor(parcela.valor)} será removido do sistema e do dashboard.\n\n`;
     } else {
       mensagemConfirmacao += `Esta conta ainda não foi recebida, então não afetará os valores do dashboard.\n\n`;
     }
-    
+
     mensagemConfirmacao += 'Esta ação não pode ser desfeita.';
-    
+
     if (!confirm(mensagemConfirmacao)) return;
 
     try {
       await deleteParcelaReceber(id);
       await carregarDados();
-      
+
       if (parcela?.status === 'Recebido') {
         alert('Conta excluída com sucesso! O dashboard será atualizado automaticamente.');
       }
@@ -253,12 +262,12 @@ export default function ContasReceberPage() {
   const getDiasParaVencimento = (dataVencimento: string) => {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
-    
+
     // Extrai a data sem considerar fuso horário
     const [ano, mes, dia] = dataVencimento.split('T')[0].split('-');
     const vencimento = new Date(Number(ano), Number(mes) - 1, Number(dia));
     vencimento.setHours(0, 0, 0, 0);
-    
+
     const diffTime = vencimento.getTime() - hoje.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
@@ -327,13 +336,13 @@ export default function ContasReceberPage() {
             </button>
             <button
               onClick={carregarDados}
-              disabled={loading}
+              disabled={loading || refreshing}
               className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded-md flex items-center gap-2 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              {loading ? 'Atualizando...' : 'Atualizar'}
+              {refreshing ? 'Atualizando...' : 'Atualizar'}
             </button>
           </div>
         </div>
@@ -543,13 +552,12 @@ export default function ContasReceberPage() {
                             {formatarData(parcela.data_vencimento)}
                           </p>
                           {parcela.status !== 'Recebido' && parcela.status !== 'Cancelado' && (
-                            <p className={`text-xs font-medium ${
-                              diasParaVencimento < 0
-                                ? 'text-red-600'
-                                : diasParaVencimento <= 7
-                                  ? 'text-yellow-600'
-                                  : 'text-blue-600'
-                            }`}>
+                            <p className={`text-xs font-medium ${diasParaVencimento < 0
+                              ? 'text-red-600'
+                              : diasParaVencimento <= 7
+                                ? 'text-yellow-600'
+                                : 'text-blue-600'
+                              }`}>
                               {diasParaVencimento < 0
                                 ? `Vencida há ${Math.abs(diasParaVencimento)} dia(s)`
                                 : diasParaVencimento === 0
@@ -619,6 +627,16 @@ export default function ContasReceberPage() {
                   </div>
 
                   <div className="flex flex-col items-end gap-2">
+                    <button
+                      className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors flex items-center gap-2"
+                      onClick={() => {
+                        setParcelaParaEditar(parcela);
+                        setModalEditarParcelaAberto(true);
+                      }}
+                    >
+                      <Pencil size={16} />
+                      Editar
+                    </button>
                     {parcela.status === 'Recebido' ? (
                       <>
                         <span className="px-4 py-2 text-sm bg-green-100 text-green-800 rounded-md font-medium">
@@ -629,7 +647,7 @@ export default function ContasReceberPage() {
                           onClick={() => handleExcluir(parcela.id)}
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"/>
+                            <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6" />
                           </svg>
                           Excluir
                         </button>
@@ -644,7 +662,7 @@ export default function ContasReceberPage() {
                           onClick={() => handleExcluir(parcela.id)}
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"/>
+                            <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6" />
                           </svg>
                           Excluir
                         </button>
@@ -672,7 +690,7 @@ export default function ContasReceberPage() {
                           onClick={() => handleExcluir(parcela.id)}
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"/>
+                            <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6" />
                           </svg>
                           Excluir
                         </button>
@@ -724,8 +742,25 @@ export default function ContasReceberPage() {
       {modalParcelaAberto && (
         <ModalNovaParcelaReceber
           clientes={clientes}
+          obraId={obraSelecionada?.id ?? null}
           onClose={() => setModalParcelaAberto(false)}
           onSuccess={carregarDados}
+        />
+      )}
+
+      {modalEditarParcelaAberto && parcelaParaEditar && (
+        <ModalEditarParcelaReceber
+          parcela={parcelaParaEditar}
+          clientes={clientes}
+          onClose={() => {
+            setModalEditarParcelaAberto(false);
+            setParcelaParaEditar(null);
+          }}
+          onSuccess={() => {
+            carregarDados();
+            setModalEditarParcelaAberto(false);
+            setParcelaParaEditar(null);
+          }}
         />
       )}
 

@@ -34,7 +34,6 @@ export default function ModalNovoCliente({ onClose, onSuccess }: ModalNovoClient
     const numeros = valor.replace(/\D/g, '');
 
     if (tipo === 'Pessoa Física') {
-      // CPF: 000.000.000-00
       if (numeros.length <= 11) {
         return numeros
           .replace(/(\d{3})(\d)/, '$1.$2')
@@ -42,7 +41,6 @@ export default function ModalNovoCliente({ onClose, onSuccess }: ModalNovoClient
           .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
       }
     } else {
-      // CNPJ: 00.000.000/0000-00
       if (numeros.length <= 14) {
         return numeros
           .replace(/(\d{2})(\d)/, '$1.$2')
@@ -122,7 +120,6 @@ export default function ModalNovoCliente({ onClose, onSuccess }: ModalNovoClient
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Informações Básicas */}
           <div className="space-y-4">
             <h3 className="font-medium text-gray-900 flex items-center gap-2">
               <FileText size={18} />
@@ -131,9 +128,7 @@ export default function ModalNovoCliente({ onClose, onSuccess }: ModalNovoClient
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">
-                  Código *
-                </label>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Código *</label>
                 <input
                   type="text"
                   value={codigo}
@@ -145,12 +140,10 @@ export default function ModalNovoCliente({ onClose, onSuccess }: ModalNovoClient
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">
-                  Tipo *
-                </label>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Tipo *</label>
                 <select
                   value={tipo}
-                  onChange={(e) => setTipo(e.target.value as any)}
+                  onChange={(e) => setTipo(e.target.value as 'Pessoa Física' | 'Pessoa Jurídica' | 'Investidor')}
                   className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
                   required
                 >
@@ -162,9 +155,7 @@ export default function ModalNovoCliente({ onClose, onSuccess }: ModalNovoClient
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">
-                Nome Completo / Razão Social *
-              </label>
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Nome Completo / Razão Social *</label>
               <input
                 type="text"
                 value={nome}
@@ -190,7 +181,6 @@ export default function ModalNovoCliente({ onClose, onSuccess }: ModalNovoClient
             </div>
           </div>
 
-          {/* Contato */}
           <div className="space-y-4">
             <h3 className="font-medium text-gray-900 flex items-center gap-2">
               <Phone size={18} />
@@ -198,9 +188,7 @@ export default function ModalNovoCliente({ onClose, onSuccess }: ModalNovoClient
             </h3>
 
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">
-                Nome do Contato
-              </label>
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Nome do Contato</label>
               <input
                 type="text"
                 value={contato}
@@ -212,9 +200,7 @@ export default function ModalNovoCliente({ onClose, onSuccess }: ModalNovoClient
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">
-                  Telefone
-                </label>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Telefone</label>
                 <input
                   type="text"
                   value={telefone}
@@ -225,9 +211,7 @@ export default function ModalNovoCliente({ onClose, onSuccess }: ModalNovoClient
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">
-                  E-mail
-                </label>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">E-mail</label>
                 <input
                   type="email"
                   value={email}
@@ -239,7 +223,6 @@ export default function ModalNovoCliente({ onClose, onSuccess }: ModalNovoClient
             </div>
           </div>
 
-          {/* Endereço */}
           <div className="space-y-4">
             <h3 className="font-medium text-gray-900 flex items-center gap-2">
               <MapPin size={18} />
@@ -247,9 +230,7 @@ export default function ModalNovoCliente({ onClose, onSuccess }: ModalNovoClient
             </h3>
 
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">
-                Endereço Completo
-              </label>
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Endereço Completo</label>
               <textarea
                 value={endereco}
                 onChange={(e) => setEndereco(e.target.value)}
@@ -260,11 +241,8 @@ export default function ModalNovoCliente({ onClose, onSuccess }: ModalNovoClient
             </div>
           </div>
 
-          {/* Observações */}
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-1 block">
-              Observações
-            </label>
+            <label className="text-sm font-medium text-gray-700 mb-1 block">Observações</label>
             <textarea
               value={observacoes}
               onChange={(e) => setObservacoes(e.target.value)}
@@ -274,7 +252,6 @@ export default function ModalNovoCliente({ onClose, onSuccess }: ModalNovoClient
             />
           </div>
 
-          {/* Botões */}
           <div className="flex gap-3 justify-end pt-4 border-t">
             <button
               type="button"

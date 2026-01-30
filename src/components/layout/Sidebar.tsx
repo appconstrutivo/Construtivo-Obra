@@ -23,6 +23,7 @@ import {
   Brain,
   Receipt,
   TrendingUp,
+  FileBarChart,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
@@ -57,7 +58,7 @@ interface SidebarContextType {
 
 const SidebarContext = React.createContext<SidebarContextType>({
   isCollapsed: false,
-  setIsCollapsed: () => {}
+  setIsCollapsed: () => { }
 });
 
 const menuItems: MenuSection[] = [
@@ -108,6 +109,11 @@ const menuItems: MenuSection[] = [
         icon: Brain,
         title: 'Inteligência Artificial',
       },
+      {
+        href: '/relatorios',
+        icon: FileBarChart,
+        title: 'Relatórios',
+      },
     ],
   },
   {
@@ -141,7 +147,7 @@ function NavItem({ href, icon: Icon, title, isCollapsed, iconColor }: NavItemPro
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    
+
     // Fechar o sidebar quando o usuário clicar em um item, independentemente do tamanho da tela
     setIsCollapsed(true);
 
@@ -171,17 +177,17 @@ function NavItem({ href, icon: Icon, title, isCollapsed, iconColor }: NavItemPro
         "flex items-center justify-center rounded-md",
         isActive ? "text-primary" : iconColor ? "" : "text-muted-foreground group-hover:text-foreground"
       )}>
-        <Icon 
-          size={isCollapsed ? 20 : 18} 
-          strokeWidth={isActive ? 2.5 : 2} 
+        <Icon
+          size={isCollapsed ? 20 : 18}
+          strokeWidth={isActive ? 2.5 : 2}
           style={iconColor ? { color: iconColor } : {}}
         />
       </div>
-      
+
       {!isCollapsed && (
         <span className="truncate">{title}</span>
       )}
-      
+
       {isActive && !isCollapsed && (
         <motion.div
           className="absolute left-0 w-1 h-8 bg-primary rounded-r-full"
@@ -199,7 +205,7 @@ export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const router = useRouter();
   const { signOut } = useAuth();
-  
+
   // Verificar o tamanho da tela quando o componente montar
   useEffect(() => {
     const checkScreenSize = () => {
@@ -207,13 +213,13 @@ export default function Sidebar() {
         setIsCollapsed(true);
       }
     };
-    
+
     // Verificar o tamanho inicial da tela
     checkScreenSize();
-    
+
     // Adicionar event listener para verificar quando a tela for redimensionada
     window.addEventListener('resize', checkScreenSize);
-    
+
     // Limpar o event listener
     return () => {
       window.removeEventListener('resize', checkScreenSize);
@@ -226,7 +232,7 @@ export default function Sidebar() {
 
   const handleProfileClick = () => {
     router.push('/perfil');
-    
+
     // Fechar o sidebar independentemente do tamanho da tela
     setIsCollapsed(true);
   };
@@ -234,7 +240,7 @@ export default function Sidebar() {
   const handleLogoutClick = () => {
     // Implementar lógica de logout
     void signOut();
-    
+
     // Fechar o sidebar independentemente do tamanho da tela
     setIsCollapsed(true);
   };
@@ -280,7 +286,7 @@ export default function Sidebar() {
                 {section.title && isCollapsed && (
                   <div className="mb-2 h-px w-full bg-border" />
                 )}
-                
+
                 {section.items.map((item, j) => (
                   <NavItem
                     key={j}
@@ -300,7 +306,7 @@ export default function Sidebar() {
           "border-t pt-4 pb-4 px-3",
           isCollapsed ? "items-center flex flex-col" : ""
         )}>
-          <div 
+          <div
             onClick={handleProfileClick}
             className={cn(
               "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all hover:bg-secondary/50 text-muted-foreground hover:text-foreground cursor-pointer",
@@ -310,8 +316,8 @@ export default function Sidebar() {
             <User size={isCollapsed ? 20 : 18} />
             {!isCollapsed && <span>Perfil</span>}
           </div>
-          
-          <div 
+
+          <div
             onClick={handleLogoutClick}
             className={cn(
               "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all hover:bg-secondary/50 text-muted-foreground hover:text-foreground cursor-pointer mt-1",
@@ -321,7 +327,7 @@ export default function Sidebar() {
             <LogOut size={isCollapsed ? 20 : 18} />
             {!isCollapsed && <span>Sair</span>}
           </div>
-          
+
           {!isCollapsed && (
             <div className="mt-6 text-xs text-center text-muted-foreground">
               <div>v1.0.0 • Sistema de Obras</div>

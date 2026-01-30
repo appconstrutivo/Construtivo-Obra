@@ -8,7 +8,7 @@ import { Cliente, ParcelaReceber } from './supabase';
  */
 async function getEmpresaId(): Promise<number> {
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (!user) {
     throw new Error('Usuário não autenticado');
   }
@@ -200,11 +200,11 @@ export async function fetchParcelasReceber(obraId?: number) {
       *,
       cliente:cliente_id(*)
     `);
-  
+
   if (obraId) {
     query = query.eq('obra_id', obraId);
   }
-  
+
   const { data, error } = await query.order('data_vencimento', { ascending: true });
 
   if (error) {
@@ -235,6 +235,7 @@ export async function fetchParcelasReceberByCliente(cliente_id: number) {
 
 /**
  * Inserir nova parcela a receber
+ * @param obraId - ID da obra selecionada; obrigatório para o lançamento aparecer na listagem por obra
  */
 export async function insertParcelaReceber(
   cliente_id: number,
@@ -243,9 +244,9 @@ export async function insertParcelaReceber(
   data_vencimento: string,
   categoria?: string,
   numero_documento?: string,
-  observacoes?: string
+  observacoes?: string,
+  obraId?: number | null
 ) {
-  // Obter empresa_id do usuário autenticado
   const empresa_id = await getEmpresaId();
 
   const { data, error } = await supabase
@@ -260,7 +261,8 @@ export async function insertParcelaReceber(
         numero_documento,
         observacoes,
         status: 'Pendente',
-        empresa_id
+        empresa_id,
+        obra_id: obraId ?? null
       }
     ])
     .select();
@@ -278,6 +280,7 @@ export async function insertParcelaReceber(
  */
 export async function updateParcelaReceber(
   id: number,
+  cliente_id: number,
   descricao: string,
   valor: number,
   data_vencimento: string,
@@ -288,6 +291,7 @@ export async function updateParcelaReceber(
   const { data, error } = await supabase
     .from('parcelas_receber')
     .update({
+      cliente_id,
       descricao,
       valor,
       data_vencimento,

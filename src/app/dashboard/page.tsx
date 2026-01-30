@@ -19,7 +19,6 @@ do ano (6 meses por vez) com dados de valores orçados vs realizados.
 - Botões com estados desabilitados nos limites (início/fim do ano)
 - Atualização otimizada: apenas o gráfico é recalculado, sem recarregar toda a tela
 - Cache local dos dados para navegação instantânea entre períodos
-- Atualização automática quando usuário retorna à aba/janela
 - Botão manual de refresh para forçar atualização dos dados
 
 ## Fluxo de Dados
@@ -136,16 +135,16 @@ export default function Dashboard() {
     totalItensCusto: 0,
   });
   const [activities, setActivities] = useState<ActivityItem[]>([]);
-  const [centrosCustoData, setCentrosCustoData] = useState<Array<{name: string; value: number}>>([]);
-  const [evolucaoObraData, setEvolucaoObraData] = useState<Array<{name: string; Receitas: number; Despesas: number}>>([]);
-  const [distribuicaoCustosData, setDistribuicaoCustosData] = useState<Array<{name: string; Orçado: number; Custo: number; Realizado: number}>>([]);
+  const [centrosCustoData, setCentrosCustoData] = useState<Array<{ name: string; value: number }>>([]);
+  const [evolucaoObraData, setEvolucaoObraData] = useState<Array<{ name: string; Receitas: number; Despesas: number }>>([]);
+  const [distribuicaoCustosData, setDistribuicaoCustosData] = useState<Array<{ name: string; Orçado: number; Custo: number; Realizado: number }>>([]);
   const [contractProgressData, setContractProgressData] = useState<ContractProgressData[]>([]);
-  
+
   // Estados para controle de navegação temporal do gráfico de evolução
   const [periodoInicial, setPeriodoInicial] = useState(0); // Mês inicial do período exibido (0 = Janeiro)
   const [mesesExibidos] = useState(6); // Quantidade de meses exibidos por vez
   const [anoSelecionado, setAnoSelecionado] = useState(new Date().getFullYear()); // Ano selecionado para análise
-  
+
   // Cache simples dos dados carregados (para navegação temporal sem recarregar do servidor)
   const [dadosCompletos, setDadosCompletos] = useState<{
     todasMedicoes: Medicao[] | null;
@@ -157,9 +156,24 @@ export default function Dashboard() {
 
   // Constante dos meses do ano (declarada no nível do componente)
   const mesesDoAno = [
-    'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 
+    'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
     'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
   ];
+
+  /** Extrai ano e mês (0–11) de data_recebimento (string ISO ou Date). Retorna null se inválido. */
+  const parseDataRecebimento = (raw: string | Date | null | undefined): { ano: number; mes: number } | null => {
+    if (!raw) return null;
+    try {
+      const s = typeof raw === 'string' ? raw : (raw as Date).toISOString();
+      const part = s.split('T')[0];
+      if (!part) return null;
+      const [a, m, d] = part.split('-').map(Number);
+      if (!Number.isFinite(a) || !Number.isFinite(m) || m < 1 || m > 12) return null;
+      return { ano: a, mes: m - 1 };
+    } catch {
+      return null;
+    }
+  };
 
 
 
@@ -244,7 +258,7 @@ export default function Dashboard() {
 
         // Filtrar parcelas da obra selecionada e com pedido aprovado
         const todasParcelas = (todasParcelasRaw || []).filter(
-          parcela => 
+          parcela =>
             parcela.pedido_compra?.status === 'Aprovado' &&
             parcela.pedido_compra?.obra_id === obraSelecionada.id
         );
@@ -265,18 +279,19 @@ export default function Dashboard() {
 
         // Filtrar parcelas da obra selecionada e com medição aprovada
         const todasParcelasMedicao = (todasParcelasMedicaoRaw || []).filter(
-          parcela => 
+          parcela =>
             parcela.medicao?.status === 'Aprovado' &&
             parcela.medicao?.obra_id === obraSelecionada.id
         );
 
-        // Buscar parcelas a receber (receitas)
+        // Buscar contas a receber marcadas como recebidas (usadas em Receitas no gráfico Evolução da Obra)
         const { data: todasParcelasReceber } = await supabase
           .from('parcelas_receber')
           .select('*')
           .eq('status', 'Recebido')
           .eq('obra_id', obraSelecionada.id)
-          .not('data_recebimento', 'is', null);
+          .not('data_recebimento', 'is', null)
+          .order('data_recebimento', { ascending: true });
 
         // Buscar negociações com medições para os aferidores
         const { data: negociacoesComMedicoes } = await supabase
@@ -292,19 +307,19 @@ export default function Dashboard() {
         // Calcular totais
         const totalOrcado = centrosCusto?.reduce((acc: number, centro: CentroCusto) => acc + Number(centro.orcado || 0), 0) || 0;
         const totalCusto = centrosCusto?.reduce((acc: number, centro: CentroCusto) => acc + Number(centro.custo || 0), 0) || 0;
-        
+
         // Calcular o total realizado com base apenas nas parcelas PAGAS
         const totalParcelasPagas = todasParcelas?.reduce((acc: number, parcela: any) => {
           return parcela.status === 'Pago' ? acc + Number(parcela.valor || 0) : acc;
         }, 0) || 0;
-        
+
         // Calcular total de parcelas de medições pagas
         const totalParcelasMedicaoPagas = todasParcelasMedicao?.reduce((acc: number, parcela: any) => {
           return parcela.status === 'Pago' ? acc + Number(parcela.valor || 0) : acc;
         }, 0) || 0;
-        
+
         const totalRealizado = totalParcelasPagas + totalParcelasMedicaoPagas;
-        
+
         const percentualExecutado = totalCusto > 0 ? (totalRealizado / totalCusto) * 100 : 0;
 
         setStats({
@@ -325,28 +340,28 @@ export default function Dashboard() {
             name: centro.descricao,
             value: Number(centro.orcado || 0)
           }));
-          
+
           // Limitar o número de centros mostrados no gráfico para melhor visualização
           // Ordenar por valor decrescente
           centrosData.sort((a, b) => b.value - a.value);
-          
+
           // Se houver mais de 5 centros, agrupar os menores como "Outros"
           if (centrosData.length > 5) {
             const principaisCentros = centrosData.slice(0, 4);
             const outrosCentros = centrosData.slice(4);
-            
+
             const somatorioOutros = outrosCentros.reduce((total, centro) => total + centro.value, 0);
-            
+
             if (somatorioOutros > 0) {
               principaisCentros.push({
                 name: 'Outros',
                 value: somatorioOutros
               });
             }
-            
+
             centrosData = principaisCentros;
           }
-          
+
           setCentrosCustoData(centrosData);
 
           // Dados para o gráfico de barras (comparativo orçado vs. custo)
@@ -356,7 +371,7 @@ export default function Dashboard() {
             Custo: Number(centro.custo || 0),
             Realizado: Number(centro.realizado || 0)
           }));
-          
+
           setDistribuicaoCustosData(distribuicaoData);
         } else {
           // Quando não há centros de custo, manter arrays vazios para exibir gráficos vazios
@@ -366,65 +381,59 @@ export default function Dashboard() {
 
         // Processar dados de evolução diretamente aqui (sem cache complicado)
         const mesesValores: { [key: string]: { Receitas: number; Despesas: number } } = {};
-        
+
         // Inicializar todos os meses com zero
         mesesDoAno.forEach(mes => {
           mesesValores[mes] = { Receitas: 0, Despesas: 0 };
         });
-        
-        // Processar parcelas a receber (RECEITAS) - APENAS RECEBIDAS
+
+        // Receitas = contas a receber marcadas como recebidas (status Recebido + data_recebimento)
         todasParcelasReceber?.forEach((parcela: any) => {
-          if (parcela.data_recebimento && parcela.status === 'Recebido') {
-            // Extrai a data sem considerar fuso horário
-            const [ano, mes, dia] = parcela.data_recebimento.split('T')[0].split('-');
-            const dataRecebimento = new Date(Number(ano), Number(mes) - 1, Number(dia));
-            const anoRecebimento = dataRecebimento.getFullYear();
-            
-            if (anoRecebimento === anoSelecionado) {
-              const mesRecebimento = mesesDoAno[dataRecebimento.getMonth()];
-              mesesValores[mesRecebimento].Receitas += Number(parcela.valor);
-            }
-          }
+          if (parcela.status !== 'Recebido' || !parcela.data_recebimento) return;
+          const parsed = parseDataRecebimento(parcela.data_recebimento);
+          if (!parsed || parsed.ano !== anoSelecionado) return;
+          const mesStr = mesesDoAno[parsed.mes];
+          mesesValores[mesStr].Receitas += Number(parcela.valor) || 0;
         });
-        
+
         // Processar parcelas de medições PAGAS (DESPESAS)
         todasParcelasMedicao?.forEach((parcela: any) => {
-          if (parcela.data_prevista && 
-              parcela.medicao?.status === 'Aprovado' && 
-              parcela.status === 'Pago') { // APENAS parcelas já pagas
+          if (parcela.data_prevista &&
+            parcela.medicao?.status === 'Aprovado' &&
+            parcela.status === 'Pago') { // APENAS parcelas já pagas
             const dataPrevisao = new Date(parcela.data_prevista);
             const anoPrevisao = dataPrevisao.getFullYear();
-            
+
             if (anoPrevisao === anoSelecionado) {
               const mesPrevisao = mesesDoAno[dataPrevisao.getMonth()];
               mesesValores[mesPrevisao].Despesas += Number(parcela.valor);
             }
           }
         });
-        
+
         // Processar parcelas de compras PAGAS (DESPESAS)
         todasParcelas?.forEach((parcela: any) => {
-          if (parcela.data_prevista && 
-              parcela.pedido_compra?.status === 'Aprovado' && 
-              parcela.status === 'Pago') { // APENAS parcelas já pagas
+          if (parcela.data_prevista &&
+            parcela.pedido_compra?.status === 'Aprovado' &&
+            parcela.status === 'Pago') { // APENAS parcelas já pagas
             const dataPrevisao = new Date(parcela.data_prevista);
             const anoPrevisao = dataPrevisao.getFullYear();
             const mesPrevisao = dataPrevisao.getMonth();
-            
+
             if (anoPrevisao === anoSelecionado) {
               const mesPrevisaoStr = mesesDoAno[mesPrevisao];
               mesesValores[mesPrevisaoStr].Despesas += Number(parcela.valor);
             }
           }
         });
-        
+
         // Converter para array baseado no período atual
         const evolucaoData = mesesDoAno.slice(periodoInicial, periodoInicial + mesesExibidos).map(mes => ({
           name: mes,
           Receitas: mesesValores[mes].Receitas,
           Despesas: mesesValores[mes].Despesas
         }));
-        
+
         setEvolucaoObraData(evolucaoData);
 
         // Armazenar dados para navegação temporal
@@ -443,7 +452,7 @@ export default function Dashboard() {
             const valorMedido = negociacao.medicoes
               ?.filter((medicao: any) => medicao.status === 'Aprovado')
               ?.reduce((acc: number, medicao: any) => acc + Number(medicao.valor_total || 0), 0) || 0;
-            
+
             const percentualExecutado = valorTotal > 0 ? (valorMedido / valorTotal) * 100 : 0;
 
             return {
@@ -492,12 +501,12 @@ export default function Dashboard() {
             title: `Pedido de Compra`,
             description: `Fornecedor: ${pedido.fornecedores?.nome || 'Não especificado'} - R$ ${Number(pedido.valor_total).toLocaleString('pt-BR')}`,
             date: (() => {
-          if (pedido.created_at.match(/^\d{4}-\d{2}-\d{2}$/)) {
-            const [ano, mes, dia] = pedido.created_at.split('-').map(Number);
-            return new Date(ano, mes - 1, dia).toLocaleDateString('pt-BR');
-          }
-          return new Date(pedido.created_at).toLocaleDateString('pt-BR');
-        })(),
+              if (pedido.created_at.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                const [ano, mes, dia] = pedido.created_at.split('-').map(Number);
+                return new Date(ano, mes - 1, dia).toLocaleDateString('pt-BR');
+              }
+              return new Date(pedido.created_at).toLocaleDateString('pt-BR');
+            })(),
             type: 'pedido',
             status: pedido.status
           });
@@ -509,12 +518,12 @@ export default function Dashboard() {
             title: `Medição`,
             description: `${medicao.negociacoes?.descricao || 'Não especificada'} - R$ ${Number(medicao.valor_total).toLocaleString('pt-BR')}`,
             date: (() => {
-          if (medicao.created_at.match(/^\d{4}-\d{2}-\d{2}$/)) {
-            const [ano, mes, dia] = medicao.created_at.split('-').map(Number);
-            return new Date(ano, mes - 1, dia).toLocaleDateString('pt-BR');
-          }
-          return new Date(medicao.created_at).toLocaleDateString('pt-BR');
-        })(),
+              if (medicao.created_at.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                const [ano, mes, dia] = medicao.created_at.split('-').map(Number);
+                return new Date(ano, mes - 1, dia).toLocaleDateString('pt-BR');
+              }
+              return new Date(medicao.created_at).toLocaleDateString('pt-BR');
+            })(),
             type: 'medicao',
             status: medicao.status
           });
@@ -526,12 +535,12 @@ export default function Dashboard() {
             title: `${negociacao.tipo} - ${negociacao.numero}`,
             description: `${negociacao.fornecedores?.nome || 'Não especificado'} - R$ ${Number(negociacao.valor_total).toLocaleString('pt-BR')}`,
             date: (() => {
-          if (negociacao.created_at.match(/^\d{4}-\d{2}-\d{2}$/)) {
-            const [ano, mes, dia] = negociacao.created_at.split('-').map(Number);
-            return new Date(ano, mes - 1, dia).toLocaleDateString('pt-BR');
-          }
-          return new Date(negociacao.created_at).toLocaleDateString('pt-BR');
-        })(),
+              if (negociacao.created_at.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                const [ano, mes, dia] = negociacao.created_at.split('-').map(Number);
+                return new Date(ano, mes - 1, dia).toLocaleDateString('pt-BR');
+              }
+              return new Date(negociacao.created_at).toLocaleDateString('pt-BR');
+            })(),
             type: 'negociacao'
           });
         });
@@ -552,107 +561,6 @@ export default function Dashboard() {
     fetchDashboardData();
   }, [obraSelecionada, isLoadingObras]); // Recarregar quando a obra selecionada mudar ou quando terminar de carregar obras
 
-  // useEffect para atualizar dados quando navegar de volta ao dashboard
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        // Página ficou visível novamente - pode ter dados novos
-        console.log('Dashboard ficou visível - verificando se há dados novos...');
-        
-        // Recarregar dados sem usar cache
-        const reloadData = async () => {
-          setLoading(true);
-          
-          try {
-            // Buscar dados frescos do Supabase
-            // Se não há obra selecionada, não atualizar dados
-            if (!obraSelecionada) {
-              return;
-            }
-
-            const { data: todasMedicoes } = await supabase
-              .from('medicoes')
-              .select('*, negociacoes(*)')
-              .eq('obra_id', obraSelecionada.id)
-              .order('created_at', { ascending: false });
-
-            // Buscar parcelas de pedidos de compra (sem filtro de obra_id direto)
-            const { data: todasParcelasRaw } = await supabase
-              .from('parcelas_pedido_compra')
-              .select(`
-                *,
-                pedido_compra:pedido_compra_id(
-                  *,
-                  obra_id
-                )
-              `)
-              .not('data_prevista', 'is', null)
-              .order('created_at', { ascending: false });
-
-            // Filtrar parcelas da obra selecionada e com pedido aprovado
-            const todasParcelas = (todasParcelasRaw || []).filter(
-              parcela => 
-                parcela.pedido_compra?.status === 'Aprovado' &&
-                parcela.pedido_compra?.obra_id === obraSelecionada.id
-            );
-
-            // Buscar parcelas de medições (sem filtro de obra_id direto)
-            const { data: todasParcelasMedicaoRaw } = await supabase
-              .from('parcelas_medicao')
-              .select(`
-                *,
-                medicao:medicao_id(
-                  status,
-                  negociacao_id,
-                  obra_id
-                )
-              `)
-              .not('data_prevista', 'is', null)
-              .order('created_at', { ascending: false });
-
-            // Filtrar parcelas da obra selecionada e com medição aprovada
-            const todasParcelasMedicao = (todasParcelasMedicaoRaw || []).filter(
-              parcela => 
-                parcela.medicao?.status === 'Aprovado' &&
-                parcela.medicao?.obra_id === obraSelecionada.id
-            );
-
-            const { data: todasParcelasReceber } = await supabase
-              .from('parcelas_receber')
-              .select('*')
-              .eq('status', 'Recebido')
-              .eq('obra_id', obraSelecionada.id)
-              .not('data_recebimento', 'is', null)
-              .order('created_at', { ascending: false });
-
-            if (dadosCompletos) {
-              // Atualizar cache com dados frescos
-              setDadosCompletos({
-                ...dadosCompletos,
-                todasMedicoes: todasMedicoes || [],
-                todasParcelas: todasParcelas || [],
-                todasParcelasMedicao: todasParcelasMedicao || [],
-                todasParcelasReceber: todasParcelasReceber || []
-              });
-            }
-          } catch (error) {
-            console.error('Erro ao atualizar dados:', error);
-          } finally {
-            setLoading(false);
-          }
-        };
-
-        reloadData();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [dadosCompletos, obraSelecionada]);
-
   // useEffect simples para recalcular gráfico de evolução quando período mudar
   useEffect(() => {
     if (!dadosCompletos) {
@@ -667,66 +575,60 @@ export default function Dashboard() {
     }
 
     const { todasMedicoes, todasParcelas, todasParcelasMedicao, todasParcelasReceber, totalOrcado } = dadosCompletos;
-    
+
     // Recalcular valores por mês
     const mesesValores: { [key: string]: { Receitas: number; Despesas: number } } = {};
-    
+
     mesesDoAno.forEach(mes => {
       mesesValores[mes] = { Receitas: 0, Despesas: 0 };
     });
-    
-    // Processar parcelas a receber (RECEITAS) - APENAS RECEBIDAS
+
+    // Receitas = contas a receber marcadas como recebidas (status Recebido + data_recebimento)
     todasParcelasReceber?.forEach((parcela: any) => {
-      if (parcela.data_recebimento && parcela.status === 'Recebido') {
-        // Extrai a data sem considerar fuso horário
-        const [ano, mes, dia] = parcela.data_recebimento.split('T')[0].split('-');
-        const dataRecebimento = new Date(Number(ano), Number(mes) - 1, Number(dia));
-        const anoRecebimento = dataRecebimento.getFullYear();
-        
-        if (anoRecebimento === anoSelecionado) {
-          const mesRecebimento = mesesDoAno[dataRecebimento.getMonth()];
-          mesesValores[mesRecebimento].Receitas += Number(parcela.valor);
-        }
-      }
+      if (parcela.status !== 'Recebido' || !parcela.data_recebimento) return;
+      const parsed = parseDataRecebimento(parcela.data_recebimento);
+      if (!parsed || parsed.ano !== anoSelecionado) return;
+      const mesStr = mesesDoAno[parsed.mes];
+      mesesValores[mesStr].Receitas += Number(parcela.valor) || 0;
     });
-    
+
     // Processar parcelas de medições PAGAS (DESPESAS)
     todasParcelasMedicao?.forEach((parcela: any) => {
-      if (parcela.data_prevista && 
-          parcela.medicao?.status === 'Aprovado' && 
-          parcela.status === 'Pago') { // APENAS parcelas já pagas
+      if (parcela.data_prevista &&
+        parcela.medicao?.status === 'Aprovado' &&
+        parcela.status === 'Pago') { // APENAS parcelas já pagas
         const dataPrevisao = new Date(parcela.data_prevista);
         const anoPrevisao = dataPrevisao.getFullYear();
-        
+
         if (anoPrevisao === anoSelecionado) {
           const mesPrevisao = mesesDoAno[dataPrevisao.getMonth()];
           mesesValores[mesPrevisao].Despesas += Number(parcela.valor);
         }
       }
     });
-    
+
     // Processar parcelas de compras PAGAS (DESPESAS)
     todasParcelas?.forEach((parcela: any) => {
-      if (parcela.data_prevista && 
-          parcela.pedido_compra?.status === 'Aprovado' && 
-          parcela.status === 'Pago') { // APENAS parcelas já pagas
+      if (parcela.data_prevista &&
+        parcela.pedido_compra?.status === 'Aprovado' &&
+        parcela.status === 'Pago') { // APENAS parcelas já pagas
         const dataPrevisao = new Date(parcela.data_prevista);
         const anoPrevisao = dataPrevisao.getFullYear();
-        
+
         if (anoPrevisao === anoSelecionado) {
           const mesPrevisao = mesesDoAno[dataPrevisao.getMonth()];
           mesesValores[mesPrevisao].Despesas += Number(parcela.valor);
         }
       }
     });
-    
+
     // Gerar dados apenas para o período selecionado
     const evolucaoData = mesesDoAno.slice(periodoInicial, periodoInicial + mesesExibidos).map(mes => ({
       name: mes,
       Receitas: mesesValores[mes].Receitas,
       Despesas: mesesValores[mes].Despesas
     }));
-    
+
     setEvolucaoObraData(evolucaoData);
   }, [periodoInicial, dadosCompletos, mesesExibidos, anoSelecionado]); // Recalcular quando período, dados ou ano mudarem
 
@@ -772,7 +674,7 @@ export default function Dashboard() {
 
   // Verificar se pode navegar para trás
   const podeNavegarAnterior = periodoInicial > 0;
-  
+
   // Verificar se pode navegar para frente
   const podeNavegarProximo = periodoInicial + mesesExibidos < mesesDoAno.length;
 
@@ -903,7 +805,7 @@ export default function Dashboard() {
               />
             </div>
           </div>
-          
+
           <CostDistributionChart
             title="Distribuição de Custos"
             description="Comparativo entre valores de custo e realizado por centro de custo"
@@ -928,7 +830,7 @@ export default function Dashboard() {
               className="min-h-[400px]"
             />
           </div>
-          
+
           {/* Coluna da direita - Atividades Recentes */}
           <ActivityList
             title="Atividades Recentes"
