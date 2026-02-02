@@ -24,6 +24,7 @@ import {
   Receipt,
   TrendingUp,
   FileBarChart,
+  Calculator,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
@@ -93,6 +94,11 @@ const menuItems: MenuSection[] = [
         href: '/contas-a-receber',
         icon: TrendingUp,
         title: 'Contas a Receber',
+      },
+      {
+        href: '/orcamento',
+        icon: Calculator,
+        title: 'Orçamento',
       },
       {
         href: '/negociacoes',

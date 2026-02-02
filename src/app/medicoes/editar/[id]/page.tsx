@@ -652,6 +652,7 @@ export default function EditarMedicaoPage({ params }: any) {
                                   quantidade: currentItem.quantidade_total,
                                   valor_unitario: currentItem.valor_unitario,
                                   valor_total: currentItem.valor_total,
+                                  empresa_id: medicao?.empresa_id ?? 0,
                                   created_at: '',
                                   updated_at: ''
                                 });

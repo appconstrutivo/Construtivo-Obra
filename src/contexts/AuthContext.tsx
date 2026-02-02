@@ -14,8 +14,8 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Função para limpeza do storage
-const clearAllAuthData = () => {
+// Função para limpeza do storage - exportada para uso em redirecionamentos
+export const clearAllAuthData = () => {
   if (typeof window === 'undefined') return;
   
   try {

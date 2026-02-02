@@ -2,7 +2,8 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { ReactNode, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, clearAllAuthData } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabaseClient';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import LoadingSpinner from '../ui/LoadingSpinner';
@@ -19,10 +20,17 @@ export function AuthLayoutCheck({ children }: { children: ReactNode }) {
   const isAuthRoute = authRoutes.some(route => pathname.startsWith(route));
   
   // Se a rota é protegida e a autenticação terminou sem usuário, redirecionar para login
+  // IMPORTANTE: Limpar sessão/cookies antes do redirect para evitar loop com middleware
+  // (middleware pode ter cookies stale que redirecionam de volta para /dashboard)
   useEffect(() => {
     if (isAuthRoute) return;
     if (!isLoading && !user) {
-      router.replace('/login');
+      const redirectToLogin = async () => {
+        await supabase.auth.signOut();
+        clearAllAuthData();
+        router.replace('/login');
+      };
+      redirectToLogin();
     }
   }, [isAuthRoute, isLoading, user, router]);
 
