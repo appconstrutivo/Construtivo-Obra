@@ -67,6 +67,16 @@ type ParcelaPagamentoState = {
   status?: string;
 };
 
+type NegociacaoFormData = {
+  tipo: string;
+  fornecedor_id: string;
+  descricao: string;
+  data_inicio: string;
+  data_fim: string;
+  obra: string;
+  engenheiro_responsavel: string;
+};
+
 // Definindo a interface para os parâmetros da rota
 interface PageParams {
   id: string;
@@ -89,7 +99,7 @@ export default function EditarNegociacaoPage({ params }: any) {
   const [itemSelecionado, setItemSelecionado] = useState<ItemCusto | null>(null);
   const [exibirDropdown, setExibirDropdown] = useState(false);
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<NegociacaoFormData>({
     tipo: 'Contrato',
     fornecedor_id: '',
     descricao: '',
