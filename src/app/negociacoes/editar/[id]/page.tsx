@@ -95,6 +95,8 @@ export default function EditarNegociacaoPage({ params }: any) {
     descricao: '',
     data_inicio: '',
     data_fim: '',
+    obra: '',
+    engenheiro_responsavel: '',
   });
   
   const [itensNegociacao, setItensNegociacao] = useState<ItemNegociacaoState[]>([]);
