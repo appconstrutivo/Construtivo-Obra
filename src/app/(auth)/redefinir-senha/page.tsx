@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 
@@ -13,7 +13,6 @@ export default function RedefinirSenha() {
   const [erro, setErro] = useState<string | null>(null);
   const [processandoToken, setProcessandoToken] = useState(true);
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   // Estado para controlar se há sessão válida
   const [temSessao, setTemSessao] = useState(false);
