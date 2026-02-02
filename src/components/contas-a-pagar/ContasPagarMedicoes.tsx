@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Calendar, Building, DollarSign, Clock, CheckCircle, AlertTriangle, Ruler } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
+import { useObra } from '@/contexts/ObraContext';
 
 interface ParcelaComMedicao {
   id: number;
@@ -17,6 +18,7 @@ interface ParcelaComMedicao {
     data_inicio: string;
     data_fim: string;
     status: string;
+    obra_id: string;
     observacao: string | null;
     negociacao: {
       id: number;
@@ -38,6 +40,7 @@ interface ContasPagarMedicoesProps {
 }
 
 export default function ContasPagarMedicoes({ onDataChange }: ContasPagarMedicoesProps) {
+  const { obraSelecionada } = useObra();
   const [parcelas, setParcelas] = useState<ParcelaComMedicao[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtroStatus, setFiltroStatus] = useState<string>('todas');
@@ -47,9 +50,15 @@ export default function ContasPagarMedicoes({ onDataChange }: ContasPagarMedicoe
 
   useEffect(() => {
     carregarParcelas();
-  }, []);
+  }, [obraSelecionada?.id]);
 
   const carregarParcelas = async () => {
+    if (!obraSelecionada) {
+      setParcelas([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -69,16 +78,14 @@ export default function ContasPagarMedicoes({ onDataChange }: ContasPagarMedicoe
 
       if (error) throw error;
       
-      console.log('Parcelas de medição carregadas:', data?.length || 0);
-      
-      // Filtrar apenas parcelas de medições aprovadas
-      const parcelasAprovadas = (data || []).filter(
-        parcela => parcela.medicao?.status === 'Aprovado'
+      // Filtrar apenas parcelas da obra selecionada e de medições aprovadas
+      const parcelasDaObra = (data || []).filter(
+        parcela =>
+          parcela.medicao?.status === 'Aprovado' &&
+          parcela.medicao?.obra_id === obraSelecionada.id
       );
       
-      console.log('Parcelas de medições aprovadas:', parcelasAprovadas.length);
-      
-      setParcelas(parcelasAprovadas);
+      setParcelas(parcelasDaObra);
     } catch (error) {
       console.error('Erro ao carregar parcelas de medição:', error);
     } finally {

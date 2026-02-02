@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Calendar, Building, DollarSign, Clock, CheckCircle, AlertTriangle, Receipt } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
+import { useObra } from '@/contexts/ObraContext';
 
 interface ParcelaComPedido {
   id: number;
@@ -16,6 +17,7 @@ interface ParcelaComPedido {
     valor_total: number;
     data_compra: string;
     status: string;
+    obra_id: string;
     observacao: string | null;
     fornecedor: {
       id: number;
@@ -31,6 +33,7 @@ interface ContasPagarComprasProps {
 }
 
 export default function ContasPagarCompras({ onDataChange }: ContasPagarComprasProps) {
+  const { obraSelecionada } = useObra();
   const [parcelas, setParcelas] = useState<ParcelaComPedido[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtroStatus, setFiltroStatus] = useState<string>('todas');
@@ -40,9 +43,15 @@ export default function ContasPagarCompras({ onDataChange }: ContasPagarComprasP
 
   useEffect(() => {
     carregarParcelas();
-  }, []);
+  }, [obraSelecionada?.id]);
 
   const carregarParcelas = async () => {
+    if (!obraSelecionada) {
+      setParcelas([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -59,16 +68,14 @@ export default function ContasPagarCompras({ onDataChange }: ContasPagarComprasP
 
       if (error) throw error;
       
-      console.log('Parcelas carregadas:', data?.length || 0);
-      
-      // Filtrar apenas parcelas de pedidos aprovados
-      const parcelasAprovadas = (data || []).filter(
-        parcela => parcela.pedido_compra?.status === 'Aprovado'
+      // Filtrar apenas parcelas da obra selecionada e de pedidos aprovados
+      const parcelasDaObra = (data || []).filter(
+        parcela =>
+          parcela.pedido_compra?.status === 'Aprovado' &&
+          parcela.pedido_compra?.obra_id === obraSelecionada.id
       );
       
-      console.log('Parcelas aprovadas:', parcelasAprovadas.length);
-      
-      setParcelas(parcelasAprovadas);
+      setParcelas(parcelasDaObra);
     } catch (error) {
       console.error('Erro ao carregar parcelas:', error);
     } finally {

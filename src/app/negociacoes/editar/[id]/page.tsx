@@ -1153,6 +1153,7 @@ export default function EditarNegociacaoPage({ params }: any) {
               quantidade: item.quantidade,
               valor_unitario: item.valor_unitario,
               valor_total: item.valor_total,
+              empresa_id: negociacao.empresa_id,
               created_at: '',
               updated_at: ''
             }))}
@@ -1163,6 +1164,7 @@ export default function EditarNegociacaoPage({ params }: any) {
               valor: parcela.valor,
               descricao: parcela.descricao,
               status: parcela.status || 'Pendente',
+              empresa_id: negociacao.empresa_id,
               created_at: '',
               updated_at: ''
             }))}

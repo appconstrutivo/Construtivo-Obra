@@ -67,7 +67,8 @@ export async function middleware(request: NextRequest) {
     
   } catch (error) {
     console.error('[Middleware] ❌ Erro no middleware:', error);
-    // Em caso de erro, permitir acesso a rotas de auth, redirecionar outras para login
+    // Em caso de erro (ex.: env Supabase não configurada), permitir acesso a rotas de auth
+    // para que /login carregue; rotas protegidas redirecionam para login
     if (isAuthRoute) {
       return response;
     }
