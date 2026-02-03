@@ -3509,7 +3509,8 @@ export async function searchSinapiNaoDesonerada(
     return [];
   }
 
-  return (data || []).map((row: Record<string, unknown>) => ({
+  const rows = (data ?? []) as unknown as Array<Record<string, unknown>>;
+  return rows.map((row) => ({
     codigo_composicao: String(row.codigo_composicao ?? ''),
     descricao: String(row.descricao ?? ''),
     unidade_medida: String(row.unidade_medida ?? ''),
@@ -3838,7 +3839,7 @@ export async function getPrecoSinapiComposicao(
     .limit(1)
     .maybeSingle();
   if (error || !data) return null;
-  const v = data[ufCol];
+  const v = (data as unknown as Record<string, unknown>)[ufCol];
   return v != null ? Number(v) : null;
 }
 
@@ -3859,7 +3860,7 @@ export async function getPrecoInsumo(
     .limit(1)
     .maybeSingle();
   if (error || !data) return null;
-  const v = data[ufCol];
+  const v = (data as unknown as Record<string, unknown>)[ufCol];
   return v != null ? Number(v) : null;
 }
 

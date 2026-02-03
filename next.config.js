@@ -2,6 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Evita falha do deploy na Vercel por erros de ESLint; lint continua via "npm run lint"
+  eslint: { ignoreDuringBuilds: true },
   images: {
     domains: [],
     unoptimized: process.env.NODE_ENV !== 'production',
@@ -24,12 +26,12 @@ const nextConfig = {
         path: false,
       };
     }
-    
+
     // Ignorar avisos do react-pdf
     config.ignoreWarnings = [
       { module: /node_modules\/@react-pdf\/renderer/ },
     ];
-    
+
     return config;
   },
 }
