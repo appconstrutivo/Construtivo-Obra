@@ -3458,6 +3458,426 @@ export const fetchObras = async (): Promise<Obra[]> => {
   }
 };
 
+// UFs válidas para custo SINAPI (coluna *_custo na sinapi_nao_desonerada)
+const SINAPI_UFS = [
+  'ac', 'al', 'am', 'ap', 'ba', 'ce', 'df', 'es', 'go', 'ma', 'mg', 'ms', 'mt',
+  'pa', 'pb', 'pe', 'pi', 'pr', 'rj', 'rn', 'ro', 'rr', 'rs', 'sc', 'se', 'sp', 'to',
+] as const;
+
+export type SinapiComposicao = {
+  codigo_composicao: string;
+  descricao: string;
+  unidade_medida: string;
+  preco: number | null;
+};
+
+/**
+ * Busca composições SINAPI não desonerada por código ou descrição.
+ * Retorna código, descrição, unidade e preço na UF informada.
+ */
+export async function searchSinapiNaoDesonerada(
+  query: string,
+  uf: string,
+  searchBy: 'codigo' | 'descricao',
+  limit = 20
+): Promise<SinapiComposicao[]> {
+  const ufNorm = uf.toLowerCase().trim();
+  if (!SINAPI_UFS.includes(ufNorm as (typeof SINAPI_UFS)[number])) {
+    return [];
+  }
+  const ufCol = `${ufNorm}_custo`;
+  const colSelect = `codigo_composicao, descricao, unidade_medida, ${ufCol}`;
+
+  let q = supabase
+    .from('sinapi_nao_desonerada')
+    .select(colSelect)
+    .limit(limit);
+
+  if (query.trim()) {
+    if (searchBy === 'codigo') {
+      q = q.ilike('codigo_composicao', `%${query.trim()}%`);
+    } else {
+      q = q.ilike('descricao', `%${query.trim()}%`);
+    }
+  } else {
+    return [];
+  }
+
+  const { data, error } = await q;
+  if (error) {
+    console.error('Erro ao buscar SINAPI:', error);
+    return [];
+  }
+
+  return (data || []).map((row: Record<string, unknown>) => ({
+    codigo_composicao: String(row.codigo_composicao ?? ''),
+    descricao: String(row.descricao ?? ''),
+    unidade_medida: String(row.unidade_medida ?? ''),
+    preco: row[ufCol] != null ? Number(row[ufCol]) : null,
+  }));
+}
+
+export type ItemDetalhamento = {
+  id: number;
+  id_custom?: number;
+  is_from_ref: boolean;
+  codigo_composicao: string;
+  tipo_item: string;
+  codigo_item: string;
+  descricao: string;
+  unidade_medida: string;
+  coeficiente: number;
+};
+
+type RowCustom = {
+  id: number;
+  codigo_item: string;
+  coeficiente: number;
+  tipo_item: string | null;
+  descricao: string | null;
+  unidade_medida: string | null;
+  excluido: boolean | null;
+};
+
+/**
+ * Busca o detalhamento (itens) de uma composição.
+ * Se estado for informado, mescla com custom (coeficientes, itens adicionados, itens excluídos).
+ */
+export async function fetchDetalhamentoComposicao(
+  codigoComposicao: string,
+  estado?: string
+): Promise<ItemDetalhamento[]> {
+  if (!codigoComposicao?.trim()) return [];
+  const codigo = codigoComposicao.trim();
+  const { data: ref, error: errRef } = await supabase
+    .from('composicao_detalhada')
+    .select('id, codigo_composicao, tipo_item, codigo_item, descricao, unidade_medida, coeficiente')
+    .eq('codigo_composicao', codigo)
+    .order('id');
+  if (errRef) {
+    console.error('Erro ao buscar detalhamento:', errRef);
+    return [];
+  }
+  const itensRef = (ref || []) as { id: number; codigo_composicao: string; tipo_item: string; codigo_item: string; descricao: string; unidade_medida: string; coeficiente: number }[];
+  if (!estado?.trim()) {
+    return itensRef.map((i) => ({
+      ...i,
+      id_custom: undefined,
+      is_from_ref: true,
+    }));
+  }
+
+  const uf = estado.trim().toLowerCase();
+  const { data: custom } = await supabase
+    .from('composicao_detalhada_custom')
+    .select('id, codigo_item, coeficiente, tipo_item, descricao, unidade_medida, excluido')
+    .eq('codigo_composicao', codigo)
+    .eq('estado', uf);
+  const rowsCustom = (custom || []) as RowCustom[];
+  const excluded = new Set(rowsCustom.filter((r) => r.excluido === true).map((r) => r.codigo_item));
+  const overrideMap = new Map<string, RowCustom>();
+  const addedRows: RowCustom[] = [];
+  const refCodigos = new Set(itensRef.map((i) => i.codigo_item));
+  rowsCustom.filter((r) => r.excluido !== true).forEach((r) => {
+    if (r.tipo_item != null || !refCodigos.has(r.codigo_item)) {
+      addedRows.push(r);
+    } else {
+      overrideMap.set(r.codigo_item, r);
+    }
+  });
+
+  const result: ItemDetalhamento[] = [];
+  itensRef.forEach((i) => {
+    if (excluded.has(i.codigo_item)) return;
+    const ov = overrideMap.get(i.codigo_item);
+    result.push({
+      id: i.id,
+      id_custom: ov?.id,
+      is_from_ref: true,
+      codigo_composicao: i.codigo_composicao,
+      tipo_item: i.tipo_item,
+      codigo_item: i.codigo_item,
+      descricao: i.descricao,
+      unidade_medida: i.unidade_medida,
+      coeficiente: ov != null ? ov.coeficiente : i.coeficiente,
+    });
+  });
+  addedRows.forEach((r) => {
+    result.push({
+      id: 0,
+      id_custom: r.id,
+      is_from_ref: false,
+      codigo_composicao: codigo,
+      tipo_item: r.tipo_item ?? 'COMPOSICAO',
+      codigo_item: r.codigo_item,
+      descricao: r.descricao ?? '',
+      unidade_medida: r.unidade_medida ?? '',
+      coeficiente: r.coeficiente,
+    });
+  });
+  return result;
+}
+
+/**
+ * Salva coeficiente customizado para um item do detalhamento (por composição e estado).
+ * Isolado por empresa (tenant).
+ */
+export async function upsertCoeficienteCustom(
+  codigoComposicao: string,
+  estado: string,
+  codigoItem: string,
+  coeficiente: number
+): Promise<boolean> {
+  const uf = estado.trim().toLowerCase();
+  const empresa_id = await getEmpresaId();
+  const { error } = await supabase
+    .from('composicao_detalhada_custom')
+    .upsert(
+      {
+        empresa_id,
+        codigo_composicao: codigoComposicao.trim(),
+        estado: uf,
+        codigo_item: codigoItem.trim(),
+        coeficiente,
+        excluido: false,
+      },
+      { onConflict: 'empresa_id,codigo_composicao,estado,codigo_item' }
+    );
+  if (error) {
+    console.error('Erro ao salvar coeficiente custom:', error);
+    return false;
+  }
+  return true;
+}
+
+/** Item retornado na busca para inserir no detalhamento (código ou descrição). */
+export type ItemBuscaDetalhamento = {
+  codigo_item: string;
+  tipo_item: string;
+  descricao: string;
+  unidade_medida: string;
+};
+
+/**
+ * Busca itens da tabela de detalhamento (composicao_detalhada) por código ou descrição.
+ * Retorna itens distintos por codigo_item para uso em "inserir item" no modal.
+ */
+export async function searchItensDetalhamentoComposicao(
+  query: string,
+  limit = 50
+): Promise<ItemBuscaDetalhamento[]> {
+  const q = (query || '').trim().replace(/,/g, ' ');
+  if (!q) return [];
+  const { data, error } = await supabase
+    .from('composicao_detalhada')
+    .select('codigo_item, tipo_item, descricao, unidade_medida')
+    .or(`codigo_item.ilike.%${q}%,descricao.ilike.%${q}%`)
+    .order('codigo_item')
+    .limit(Math.min(limit, 100));
+  if (error) {
+    console.error('Erro ao buscar itens para detalhamento:', error);
+    return [];
+  }
+  const rows = (data || []) as ItemBuscaDetalhamento[];
+  const seen = new Set<string>();
+  return rows.filter((r) => {
+    if (seen.has(r.codigo_item)) return false;
+    seen.add(r.codigo_item);
+    return true;
+  });
+}
+
+/**
+ * Insere um novo item no detalhamento da composição (custom).
+ * Isolado por empresa (tenant).
+ */
+export async function insertItemDetalhamento(
+  codigoComposicao: string,
+  estado: string,
+  codigoItem: string,
+  tipoItem: string,
+  descricao: string,
+  unidadeMedida: string,
+  coeficiente: number
+): Promise<boolean> {
+  const uf = estado.trim().toLowerCase();
+  const empresa_id = await getEmpresaId();
+  const { error } = await supabase.from('composicao_detalhada_custom').insert({
+    empresa_id,
+    codigo_composicao: codigoComposicao.trim(),
+    estado: uf,
+    codigo_item: codigoItem.trim(),
+    tipo_item: tipoItem,
+    descricao: descricao || '',
+    unidade_medida: unidadeMedida || '',
+    coeficiente,
+    excluido: false,
+  });
+  if (error) {
+    console.error('Erro ao inserir item no detalhamento:', error);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Exclui item do detalhamento: se for de referência, marca excluido=true; se for adicionado, remove a linha.
+ * Isolado por empresa (tenant).
+ */
+export async function excluirItemDetalhamento(
+  item: ItemDetalhamento,
+  codigoComposicao: string,
+  estado: string
+): Promise<boolean> {
+  const uf = estado.trim().toLowerCase();
+  const codigo = codigoComposicao.trim();
+  const empresa_id = await getEmpresaId();
+  if (item.is_from_ref) {
+    const { error } = await supabase.from('composicao_detalhada_custom').upsert(
+      {
+        empresa_id,
+        codigo_composicao: codigo,
+        estado: uf,
+        codigo_item: item.codigo_item.trim(),
+        coeficiente: 0,
+        excluido: true,
+      },
+      { onConflict: 'empresa_id,codigo_composicao,estado,codigo_item' }
+    );
+    if (error) {
+      console.error('Erro ao excluir item (ref):', error);
+      return false;
+    }
+    return true;
+  }
+  if (item.id_custom == null) return false;
+  const { error } = await supabase
+    .from('composicao_detalhada_custom')
+    .delete()
+    .eq('id', item.id_custom);
+  if (error) {
+    console.error('Erro ao excluir item (custom):', error);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Remove todas as customizações do detalhamento de uma composição para um estado (restaurar).
+ */
+export async function deleteDetalhamentoCustom(
+  codigoComposicao: string,
+  estado: string
+): Promise<boolean> {
+  const uf = estado.trim().toLowerCase();
+  const { error } = await supabase
+    .from('composicao_detalhada_custom')
+    .delete()
+    .eq('codigo_composicao', codigoComposicao.trim())
+    .eq('estado', uf);
+  if (error) {
+    console.error('Erro ao restaurar detalhamento:', error);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Verifica se existe customização para a composição no estado.
+ */
+export async function hasDetalhamentoCustom(
+  codigoComposicao: string,
+  estado: string
+): Promise<boolean> {
+  const uf = estado.trim().toLowerCase();
+  const { data, error } = await supabase
+    .from('composicao_detalhada_custom')
+    .select('id')
+    .eq('codigo_composicao', codigoComposicao.trim())
+    .eq('estado', uf)
+    .limit(1);
+  if (error) return false;
+  return (data?.length ?? 0) > 0;
+}
+
+/**
+ * Retorna o preço unitário calculado da composição no estado.
+ * Fórmula analítica: Σ (coeficiente do item × preço unitário do item).
+ * COMPOSICAO → preço em sinapi_nao_desonerada; INSUMO → preço em insumo_preco_unitario.
+ * Retorna null se não houver detalhamento.
+ */
+export async function getPrecoComposicaoCalculado(
+  codigoComposicao: string,
+  estado: string
+): Promise<number | null> {
+  const itens = await fetchDetalhamentoComposicao(codigoComposicao, estado);
+  if (itens.length === 0) return null;
+  let soma = 0;
+  for (const i of itens) {
+    const precoUnit = await getPrecoItemDetalhamento(i.tipo_item, i.codigo_item, estado);
+    const preco = precoUnit ?? 0;
+    soma += i.coeficiente * preco;
+  }
+  return Math.round(soma * 100) / 100;
+}
+
+/**
+ * Retorna o preço unitário oficial SINAPI da composição no estado (não desonerada).
+ */
+export async function getPrecoSinapiComposicao(
+  codigoComposicao: string,
+  estado: string
+): Promise<number | null> {
+  const ufNorm = estado.trim().toLowerCase();
+  if (!SINAPI_UFS.includes(ufNorm as (typeof SINAPI_UFS)[number])) return null;
+  const ufCol = `${ufNorm}_custo`;
+  const { data, error } = await supabase
+    .from('sinapi_nao_desonerada')
+    .select(ufCol)
+    .eq('codigo_composicao', codigoComposicao.trim())
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) return null;
+  const v = data[ufCol];
+  return v != null ? Number(v) : null;
+}
+
+/**
+ * Retorna o preço unitário do insumo no estado (tabela insumo_preco_unitario).
+ */
+export async function getPrecoInsumo(
+  codigoInsumo: string,
+  estado: string
+): Promise<number | null> {
+  const ufNorm = estado.trim().toLowerCase();
+  if (!SINAPI_UFS.includes(ufNorm as (typeof SINAPI_UFS)[number])) return null;
+  const ufCol = `${ufNorm}_custo`;
+  const { data, error } = await supabase
+    .from('insumo_preco_unitario')
+    .select(ufCol)
+    .eq('codigo_insumo', codigoInsumo.trim())
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) return null;
+  const v = data[ufCol];
+  return v != null ? Number(v) : null;
+}
+
+/**
+ * Retorna o preço unitário do item (composição ou insumo) no estado.
+ * Se tipo_item = COMPOSICAO, busca em sinapi_nao_desonerada; se INSUMO, em insumo_preco_unitario.
+ */
+export async function getPrecoItemDetalhamento(
+  tipoItem: string,
+  codigoItem: string,
+  estado: string
+): Promise<number | null> {
+  const tipo = (tipoItem || '').trim().toUpperCase();
+  if (tipo === 'COMPOSICAO') return getPrecoSinapiComposicao(codigoItem, estado);
+  if (tipo === 'INSUMO') return getPrecoInsumo(codigoItem, estado);
+  return null;
+}
+
 // Funções para gerenciar parcelas de pedidos de compra
 export async function fetchParcelasPedidoCompraByPedido(pedido_compra_id: number) {
   const { data, error } = await supabase
