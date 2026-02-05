@@ -4,13 +4,13 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { fetchCentrosCusto, CentroCusto, deleteCentroCusto, atualizarTodosTotais } from '@/lib/supabase';
 import { useObra } from '@/contexts/ObraContext';
-import { 
-  Eye, 
-  Pencil, 
-  Trash2, 
-  PlusCircle, 
-  DollarSign, 
-  TrendingUp, 
+import {
+  Eye,
+  Pencil,
+  Trash2,
+  PlusCircle,
+  DollarSign,
+  TrendingUp,
   TrendingDown,
   EyeOff
 } from 'lucide-react';
@@ -49,13 +49,13 @@ export default function ControleFinanceiro() {
 
     try {
       setCarregando(true);
-      
+
       // Primeiro carregar os dados sem atualizar totais para exibição rápida
       // Filtrar por obra selecionada para garantir isolamento
       const data = await fetchCentrosCusto(obraSelecionada.id);
       setCentrosCusto(data);
       setCarregando(false);
-      
+
       // Depois, executar a atualização de totais em segundo plano
       // Isso permite que a UI seja mostrada rapidamente
       atualizarTodosTotais().then(() => {
@@ -72,7 +72,7 @@ export default function ControleFinanceiro() {
 
   async function handleExcluirCentroCusto() {
     if (!centroCustoSelecionado) return;
-    
+
     try {
       await deleteCentroCusto(centroCustoSelecionado.id);
       await carregarCentrosCusto();
@@ -84,14 +84,14 @@ export default function ControleFinanceiro() {
       // 23503 = violação de FK (há grupos/itens vinculados)
       if (err?.code === '23503') {
         setErroExcluir(
-          'Não foi possível excluir: este centro de custo possui vínculos (ex.: grupos/itens/lançamentos). Remova os registros vinculados antes de excluir.'
+          'Não foi possível excluir: esta etapa possui vínculos (ex.: grupos/itens/lançamentos). Remova os registros vinculados antes de excluir.'
         );
       } else if (err?.code === 'RLS_DENY_DELETE') {
         setErroExcluir(
           'Exclusão não permitida para seu usuário. Apenas administradores podem excluir centros de custo.'
         );
       } else {
-        setErroExcluir('Não foi possível excluir o centro de custo. Verifique o console para detalhes.');
+        setErroExcluir('Não foi possível excluir a etapa. Verifique o console para detalhes.');
       }
     }
   }
@@ -108,8 +108,8 @@ export default function ControleFinanceiro() {
   }
 
   function formatarValor(valor: number) {
-    return valor.toLocaleString('pt-BR', { 
-      style: 'currency', 
+    return valor.toLocaleString('pt-BR', {
+      style: 'currency',
       currency: 'BRL',
       minimumFractionDigits: 2
     });
@@ -118,8 +118,7 @@ export default function ControleFinanceiro() {
   return (
     <main className="w-full p-6">
       <div className="flex flex-col space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">CENTROS DE CUSTO</h1>
+        <div className="flex justify-end items-center">
           <div className="flex gap-4">
             <button
               onClick={() => setMostrarBDI(!mostrarBDI)}
@@ -128,13 +127,13 @@ export default function ControleFinanceiro() {
               {mostrarBDI ? <EyeOff size={18} /> : <Eye size={18} />}
               {mostrarBDI ? 'Ocultar BDI' : 'Mostrar BDI'}
             </button>
-            
+
             <button
               onClick={() => setModalNovoAberto(true)}
               className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
               <PlusCircle size={18} />
-              NOVO CENTRO DE CUSTO
+              NOVA ETAPA
             </button>
           </div>
         </div>
@@ -181,8 +180,8 @@ export default function ControleFinanceiro() {
               <span>{progressoTotal}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2.5">
-              <div 
-                className="bg-purple-600 h-2.5 rounded-full" 
+              <div
+                className="bg-purple-600 h-2.5 rounded-full"
                 style={{ width: `${progressoTotal}%` }}
               ></div>
             </div>
@@ -214,7 +213,7 @@ export default function ControleFinanceiro() {
                   ID
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Centro de Custo
+                  ETAPA
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Orçamento
@@ -248,16 +247,16 @@ export default function ControleFinanceiro() {
               ) : centrosCusto.length === 0 ? (
                 <tr>
                   <td colSpan={mostrarBDI ? 8 : 7} className="px-6 py-4 text-center text-sm text-gray-500">
-                    Nenhum centro de custo encontrado
+                    Nenhuma etapa encontrada
                   </td>
                 </tr>
               ) : (
                 centrosCusto.map((centro) => {
                   const saldo = (centro.custo || 0) - (centro.realizado || 0);
-                  const progresso = centro.custo > 0 
-                    ? Math.round((centro.realizado / centro.custo) * 100) 
+                  const progresso = centro.custo > 0
+                    ? Math.round((centro.realizado / centro.custo) * 100)
                     : 0;
-                  
+
                   return (
                     <tr key={centro.id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -280,9 +279,8 @@ export default function ControleFinanceiro() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex items-center gap-2">
                           {formatarValor(centro.realizado || 0)}
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                            progresso >= 100 ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
-                          }`}>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${progresso >= 100 ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
+                            }`}>
                             {progresso}%
                           </span>
                         </div>
@@ -300,7 +298,7 @@ export default function ControleFinanceiro() {
                           <Link href={`/financeiro/grupos?centroCustoId=${centro.id}`} className="text-blue-600 hover:text-blue-900">
                             <Eye size={18} />
                           </Link>
-                          <button 
+                          <button
                             type="button"
                             onClick={(e) => {
                               e.preventDefault();
@@ -312,7 +310,7 @@ export default function ControleFinanceiro() {
                           >
                             <Pencil size={18} />
                           </button>
-                          <button 
+                          <button
                             type="button"
                             onClick={(e) => {
                               e.preventDefault();
@@ -320,7 +318,7 @@ export default function ControleFinanceiro() {
                               abrirModalExcluir(centro);
                             }}
                             className="text-red-600 hover:text-red-900"
-                            aria-label={`Excluir centro de custo ${centro.descricao}`}
+                            aria-label={`Excluir etapa ${centro.descricao}`}
                           >
                             <Trash2 size={18} />
                           </button>
@@ -366,11 +364,11 @@ export default function ControleFinanceiro() {
           setErroExcluir(null);
         }}
         onConfirm={handleExcluirCentroCusto}
-        titulo="Excluir Centro de Custo"
+        titulo="Excluir Etapa"
         mensagem={
           erroExcluir
             ? erroExcluir
-            : `Tem certeza que deseja excluir o centro de custo "${centroCustoSelecionado?.descricao}"? Esta ação não pode ser desfeita.`
+            : `Tem certeza que deseja excluir a etapa "${centroCustoSelecionado?.descricao}"? Esta ação não pode ser desfeita.`
         }
         confirmButtonText="Excluir"
         cancelButtonText="Cancelar"

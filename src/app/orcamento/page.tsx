@@ -4,7 +4,7 @@
  * Módulo de Orçamento de Obras - Fluxo completo
  *
  * Integrado ao banco de dados (orcamentos, orcamento_grupos, orcamento_itens).
- * Fluxo típico: dados gerais → grupos e itens → BDI e resumo → revisão.
+ * Fluxo típico: dados gerais → estrutura e itens → BDI e resumo → revisão.
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
@@ -15,6 +15,7 @@ import {
   ChevronRight,
   ChevronLeft,
   FileText,
+  FileDown,
   Calculator,
   Building2,
   Check,
@@ -24,6 +25,11 @@ import {
   X,
   Layers,
 } from 'lucide-react';
+import { pdf } from '@react-pdf/renderer';
+import PDFOrcamento, {
+  type FormatoPDFOrcamento,
+  type DetalhamentoComposicaoPDF,
+} from '@/components/orcamento/PDFOrcamento';
 import { useObra } from '@/contexts/ObraContext';
 import {
   fetchOrcamentos,
@@ -42,6 +48,7 @@ import {
   getPrecoComposicaoCalculado,
   getPrecoSinapiComposicao,
   getPrecoItemDetalhamento,
+  aplicarOrcamentoAoControleInsumo,
   type OrcamentoDocumento,
   type SinapiComposicao,
   type ItemDetalhamento,
@@ -140,7 +147,7 @@ function formatarMoeda(valor: number) {
 }
 
 export default function OrcamentoPage() {
-  const { obraSelecionada } = useObra();
+  const { obraSelecionada, obras } = useObra();
   const { showNotification } = useNotification();
 
   const [orcamentos, setOrcamentos] = useState<OrcamentoDocumento[]>([]);
@@ -150,6 +157,10 @@ export default function OrcamentoPage() {
   const [orcamentoAtual, setOrcamentoAtual] = useState<OrcamentoDocumento | null>(null);
   const [modalExcluirAberto, setModalExcluirAberto] = useState(false);
   const [orcamentoParaExcluir, setOrcamentoParaExcluir] = useState<OrcamentoDocumento | null>(null);
+  const [modalPdfAberto, setModalPdfAberto] = useState(false);
+  const [orcamentoParaPdf, setOrcamentoParaPdf] = useState<OrcamentoDocumento | null>(null);
+  const [formatoPdfSelecionado, setFormatoPdfSelecionado] = useState<FormatoPDFOrcamento>('resumido');
+  const [gerandoPdf, setGerandoPdf] = useState(false);
   const [etapaAtual, setEtapaAtual] = useState(1);
   const totalEtapas = 4;
 
@@ -240,6 +251,10 @@ export default function OrcamentoPage() {
     open: boolean;
   }>({ term: '', results: [], loading: false, open: false });
   const inserirItemDetalhamentoDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [obraParaControleInsumo, setObraParaControleInsumo] = useState<number | null>(null);
+  const [aplicandoControleInsumo, setAplicandoControleInsumo] = useState(false);
+  const [modalConfirmarAplicarInsumo, setModalConfirmarAplicarInsumo] = useState(false);
 
   const carregarOrcamentos = useCallback(async () => {
     setLoading(true);
@@ -773,6 +788,71 @@ export default function OrcamentoPage() {
     setEtapaAtual(1);
   };
 
+  const executarAplicarAoControleInsumo = async () => {
+    const obraId = obraParaControleInsumo;
+    if (!obraId) return;
+    const blocosComItens = grupos.filter((g) => g.itens && g.itens.length > 0);
+    if (blocosComItens.length === 0) return;
+    const obra = obras.find((o) => o.id === obraId);
+    setAplicandoControleInsumo(true);
+    setModalConfirmarAplicarInsumo(false);
+    try {
+      const payload = grupos.map((g) => ({
+        codigo: g.codigo,
+        descricao: g.descricao,
+        itens: g.itens.map((i) => ({
+          codigo: (i.codigo || '').trim(),
+          descricao: i.descricao,
+          unidade: i.unidade,
+          quantidade: i.quantidade,
+          precoUnitario: i.precoUnitario,
+        })),
+      }));
+      const result = await aplicarOrcamentoAoControleInsumo(
+        obraId,
+        obra?.empresa_id ?? null,
+        payload,
+        ufPrecoSINAPI,
+        percentualBDI
+      );
+      showNotification({
+        title: 'Aplicado ao Controle de Insumo',
+        message: `Criados: ${result.etapas} etapa(s), ${result.composicoes} composição(ões) e ${result.itens} item(ns) de orçamento.`,
+        type: 'success',
+      });
+    } catch (error) {
+      console.error('Erro ao aplicar orçamento ao Controle de Insumo:', error);
+      showNotification({
+        title: 'Erro',
+        message: error instanceof Error ? error.message : 'Não foi possível aplicar o orçamento ao Controle de Insumo.',
+        type: 'error',
+      });
+    } finally {
+      setAplicandoControleInsumo(false);
+    }
+  };
+
+  const abrirConfirmacaoAplicarInsumo = () => {
+    if (!obraParaControleInsumo) {
+      showNotification({
+        title: 'Obra não selecionada',
+        message: 'Selecione a obra em que deseja aplicar o orçamento ao Controle de Insumo.',
+        type: 'error',
+      });
+      return;
+    }
+    const blocosComItens = grupos.filter((g) => g.itens && g.itens.length > 0);
+    if (blocosComItens.length === 0) {
+      showNotification({
+        title: 'Orçamento vazio',
+        message: 'Adicione pelo menos um bloco com itens na etapa "Estrutura e Itens" antes de aplicar.',
+        type: 'error',
+      });
+      return;
+    }
+    setModalConfirmarAplicarInsumo(true);
+  };
+
   const editarOrcamento = async (orc: OrcamentoDocumento) => {
     setLoading(true);
     try {
@@ -849,6 +929,79 @@ export default function OrcamentoPage() {
   const abrirModalExcluir = (orc: OrcamentoDocumento) => {
     setOrcamentoParaExcluir(orc);
     setModalExcluirAberto(true);
+  };
+
+  const abrirModalPdf = (orc: OrcamentoDocumento) => {
+    setOrcamentoParaPdf(orc);
+    setFormatoPdfSelecionado('resumido');
+    setModalPdfAberto(true);
+  };
+
+  const gerarPdfOrcamento = async () => {
+    if (!orcamentoParaPdf) return;
+    setGerandoPdf(true);
+    try {
+      const completo = await fetchOrcamentoCompleto(orcamentoParaPdf.id);
+      if (!completo) {
+        showNotification({
+          title: 'Erro',
+          message: 'Não foi possível carregar o orçamento para o PDF.',
+          type: 'error',
+        });
+        return;
+      }
+      const { orcamento, grupos, itens } = completo;
+      let detalhamentoPorComposicao: Record<string, DetalhamentoComposicaoPDF> = {};
+      const ufDetalhamento = 'SP';
+
+      if (formatoPdfSelecionado === 'analitico_com_item') {
+        const codigosUnicos = [...new Set(itens.map((i) => (i.codigo || '').trim()).filter(Boolean))];
+        for (const codigo of codigosUnicos) {
+          const itensDetalhe = await fetchDetalhamentoComposicao(codigo, ufDetalhamento);
+          const precosPorItem: Record<string, number> = {};
+          for (const row of itensDetalhe) {
+            const preco = await getPrecoItemDetalhamento(row.tipo_item, row.codigo_item, ufDetalhamento);
+            precosPorItem[row.codigo_item] = preco ?? 0;
+          }
+          detalhamentoPorComposicao[codigo] = { itens: itensDetalhe, precosPorItem };
+        }
+      }
+
+      const blob = await pdf(
+        <PDFOrcamento
+          formato={formatoPdfSelecionado}
+          orcamento={orcamento}
+          grupos={grupos}
+          itens={itens}
+          detalhamentoPorComposicao={detalhamentoPorComposicao}
+        />
+      ).toBlob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const nomeArquivo = `orcamento-${orcamento.numero || orcamento.id}-${formatoPdfSelecionado}-${Date.now().toString(36)}.pdf`;
+      link.download = nomeArquivo;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showNotification({
+        title: 'PDF gerado',
+        message: 'O arquivo foi baixado com sucesso.',
+        type: 'success',
+      });
+      setModalPdfAberto(false);
+      setOrcamentoParaPdf(null);
+    } catch (error) {
+      console.error('Erro ao gerar PDF do orçamento:', error);
+      showNotification({
+        title: 'Erro',
+        message: 'Não foi possível gerar o PDF. Tente novamente.',
+        type: 'error',
+      });
+    } finally {
+      setGerandoPdf(false);
+    }
   };
 
   const handleExcluirOrcamento = async () => {
@@ -977,6 +1130,13 @@ export default function OrcamentoPage() {
                     </td>
                     <td className="px-4 py-3 flex gap-2">
                       <button
+                        onClick={() => abrirModalPdf(o)}
+                        className="text-primary hover:text-primary/80"
+                        title="Gerar PDF"
+                      >
+                        <FileDown size={18} />
+                      </button>
+                      <button
                         onClick={() => editarOrcamento(o)}
                         className="text-amber-600 hover:text-amber-800"
                         title="Editar"
@@ -1014,6 +1174,111 @@ export default function OrcamentoPage() {
           confirmButtonText="Excluir"
           cancelButtonText="Cancelar"
         />
+
+        <Modal
+          isOpen={modalPdfAberto}
+          onClose={() => {
+            if (!gerandoPdf) {
+              setModalPdfAberto(false);
+              setOrcamentoParaPdf(null);
+            }
+          }}
+          title="Gerar PDF do Orçamento"
+          description={
+            orcamentoParaPdf
+              ? `${orcamentoParaPdf.numero || 'Orçamento'} – ${orcamentoParaPdf.obra_nome || '-'}`
+              : 'Selecione o formato do PDF'
+          }
+          footer={
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setModalPdfAberto(false);
+                  setOrcamentoParaPdf(null);
+                }}
+                disabled={gerandoPdf}
+                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => void gerarPdfOrcamento()}
+                disabled={gerandoPdf}
+                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
+              >
+                {gerandoPdf ? (
+                  <>
+                    <LoadingSpinner size="small" />
+                    Gerando...
+                  </>
+                ) : (
+                  <>
+                    <FileDown size={18} />
+                    Gerar PDF
+                  </>
+                )}
+              </button>
+            </div>
+          }
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Escolha o formato do documento:
+            </p>
+            <div className="space-y-3">
+              <label className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                <input
+                  type="radio"
+                  name="formatoPdf"
+                  value="resumido"
+                  checked={formatoPdfSelecionado === 'resumido'}
+                  onChange={() => setFormatoPdfSelecionado('resumido')}
+                  className="mt-1 text-primary"
+                />
+                <div>
+                  <span className="font-medium text-gray-900">Resumido</span>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Etapas e seus respectivos valores.
+                  </p>
+                </div>
+              </label>
+              <label className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                <input
+                  type="radio"
+                  name="formatoPdf"
+                  value="analitico"
+                  checked={formatoPdfSelecionado === 'analitico'}
+                  onChange={() => setFormatoPdfSelecionado('analitico')}
+                  className="mt-1 text-primary"
+                />
+                <div>
+                  <span className="font-medium text-gray-900">Analítico</span>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Etapa e Composição: código, descrição, quantidade, preço e total por item.
+                  </p>
+                </div>
+              </label>
+              <label className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                <input
+                  type="radio"
+                  name="formatoPdf"
+                  value="analitico_com_item"
+                  checked={formatoPdfSelecionado === 'analitico_com_item'}
+                  onChange={() => setFormatoPdfSelecionado('analitico_com_item')}
+                  className="mt-1 text-primary"
+                />
+                <div>
+                  <span className="font-medium text-gray-900">Analítico com item</span>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Etapa, Composição e itens do detalhamento (insumos de cada composição).
+                  </p>
+                </div>
+              </label>
+            </div>
+          </div>
+        </Modal>
       </main>
     );
   }
@@ -1021,7 +1286,7 @@ export default function OrcamentoPage() {
   // Wizard de criação/edição
   const etapas = [
     { num: 1, titulo: 'Dados Gerais', icon: FileText },
-    { num: 2, titulo: 'Grupos e Itens', icon: ListChecks },
+    { num: 2, titulo: 'Estrutura e Itens', icon: ListChecks },
     { num: 3, titulo: 'BDI e Resumo', icon: Percent },
     { num: 4, titulo: 'Revisão', icon: Eye },
   ];
@@ -1209,15 +1474,15 @@ export default function OrcamentoPage() {
           </div>
         )}
 
-        {/* Etapa 2: Grupos e Itens */}
+        {/* Etapa 2: Estrutura e Itens */}
         {etapaAtual === 2 && (
           <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <ListChecks size={20} />
-              Grupos e Itens do Orçamento
+              Estrutura e Itens do Orçamento
             </h2>
             <p className="text-sm text-gray-600">
-              Adicione itens em cada grupo. Código, descrição, unidade,
+              Adicione itens em cada bloco. Código, descrição, unidade,
               quantidade e preço unitário.
             </p>
             <div className="flex items-center gap-2 mb-4 p-3 bg-gray-50 rounded-lg">
@@ -1274,7 +1539,7 @@ export default function OrcamentoPage() {
                         )
                       }
                       className="flex-1 border rounded px-2 py-1 text-sm"
-                      placeholder="Descrição do grupo"
+                      placeholder="Descrição do bloco"
                     />
                   </div>
                   <div className="flex items-center gap-2">
@@ -1286,7 +1551,7 @@ export default function OrcamentoPage() {
                     <button
                       onClick={() => removerGrupo(grupo.id)}
                       className="text-red-600 hover:text-red-800"
-                      title="Remover grupo"
+                      title="Remover bloco"
                     >
                       <Trash2 size={16} />
                     </button>
@@ -1521,7 +1786,7 @@ export default function OrcamentoPage() {
               className="text-primary hover:text-primary/80 flex items-center gap-2 font-medium"
             >
               <Plus size={18} />
-              Adicionar grupo
+              Adicionar bloco
             </button>
 
             <Modal
@@ -1838,7 +2103,7 @@ export default function OrcamentoPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 text-left">
-                    <th className="px-4 py-2">Grupo</th>
+                    <th className="px-4 py-2">Bloco</th>
                     <th className="px-4 py-2 text-right">Subtotal</th>
                   </tr>
                 </thead>
@@ -1866,6 +2131,79 @@ export default function OrcamentoPage() {
                 </span>
               </div>
             </div>
+
+            {/* Aplicar orçamento ao Controle de Insumo */}
+            {grupos.filter((g) => g.itens.length > 0).length > 0 && (
+              <div className="border rounded-lg p-4 bg-gray-50/80 space-y-3">
+                <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                  <Layers size={18} />
+                  Aplicar ao Controle de Insumo
+                </h3>
+                <p className="text-xs text-gray-600">
+                  Crie Etapas, Composições e Itens de orçamento na obra escolhida a partir da estrutura atual.
+                </p>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="obra-controle-insumo" className="text-sm font-medium text-gray-700">
+                      Obra:
+                    </label>
+                    <select
+                      id="obra-controle-insumo"
+                      value={obraParaControleInsumo ?? ''}
+                      onChange={(e) =>
+                        setObraParaControleInsumo(
+                          e.target.value ? Number(e.target.value) : null
+                        )
+                      }
+                      className="border border-gray-300 rounded-lg px-3 py-2 text-sm min-w-[200px]"
+                    >
+                      <option value="">Selecione a obra</option>
+                      {obras.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.nome}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={abrirConfirmacaoAplicarInsumo}
+                    disabled={!obraParaControleInsumo || aplicandoControleInsumo}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {aplicandoControleInsumo ? (
+                      <LoadingSpinner size="small" />
+                    ) : (
+                      <Layers size={16} />
+                    )}
+                    {aplicandoControleInsumo ? 'Aplicando...' : 'Aplicar ao Controle de Insumo'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Modal de confirmação: Aplicar orçamento ao Controle de Insumo */}
+            <ConfirmacaoModal
+              isOpen={modalConfirmarAplicarInsumo}
+              onClose={() => setModalConfirmarAplicarInsumo(false)}
+              onConfirm={() => void executarAplicarAoControleInsumo()}
+              titulo="Aplicar ao Controle de Insumo"
+              mensagem={
+                obraParaControleInsumo ? (
+                  <>
+                    Deseja realmente aplicar o orçamento na obra{' '}
+                    <span className="font-semibold text-gray-900">
+                      &quot;{obras.find((o) => o.id === obraParaControleInsumo)?.nome ?? 'selecionada'}&quot;
+                    </span>
+                    ? Serão criadas Etapas, Composições e Itens de orçamento a partir da estrutura atual.
+                  </>
+                ) : (
+                  ''
+                )
+              }
+              confirmButtonText="Aplicar"
+              cancelButtonText="Cancelar"
+            />
           </div>
         )}
 

@@ -6,12 +6,11 @@ import { usePathname } from 'next/navigation';
 import { useRouter } from '@/app/navigation';
 import { cn } from '@/lib/utils';
 import {
-  Landmark,
+  Package,
   Ruler,
   ClipboardList,
   Building2,
   Settings,
-  HelpCircle,
   Crown,
   Home,
   PanelLeftClose,
@@ -72,8 +71,8 @@ const menuItems: MenuSection[] = [
       },
       {
         href: '/financeiro',
-        icon: Landmark,
-        title: 'Controle Financeiro',
+        icon: Package,
+        title: 'Controle de Insumo',
       },
       {
         href: '/medicoes',
@@ -96,11 +95,6 @@ const menuItems: MenuSection[] = [
         title: 'Contas a Receber',
       },
       {
-        href: '/orcamento',
-        icon: Calculator,
-        title: 'Orçamento',
-      },
-      {
         href: '/negociacoes',
         icon: ClipboardList,
         title: 'Contratos',
@@ -111,14 +105,19 @@ const menuItems: MenuSection[] = [
         title: 'Fornecedores',
       },
       {
-        href: '/inteligencia-artificial',
-        icon: Brain,
-        title: 'Inteligência Artificial',
-      },
-      {
         href: '/relatorios',
         icon: FileBarChart,
         title: 'Relatórios',
+      },
+      {
+        href: '/orcamento',
+        icon: Calculator,
+        title: 'Orçamento',
+      },
+      {
+        href: '/inteligencia-artificial',
+        icon: Brain,
+        title: 'Inteligência Artificial',
       },
     ],
   },
@@ -129,11 +128,6 @@ const menuItems: MenuSection[] = [
         href: '/configuracoes',
         icon: Settings,
         title: 'Configurações',
-      },
-      {
-        href: '/ajuda',
-        icon: HelpCircle,
-        title: 'Ajuda',
       },
       {
         href: '/plano',

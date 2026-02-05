@@ -274,12 +274,20 @@ export async function insertCentroCusto(
   descricao: string,
   opts: { empresaId: number; obraId?: number | null }
 ) {
-  // Buscar o último código para incrementar (por empresa; RLS já isola)
-  const { data: ultimoCentro, error: errorUltimo } = await supabase
+  // Buscar o último código para incrementar (por obra, para que cada obra tenha sequência 01, 02, 03...)
+  let queryUltimo = supabase
     .from('centros_custo')
     .select('codigo')
     .order('codigo', { ascending: false })
     .limit(1);
+
+  if (opts.obraId) {
+    queryUltimo = queryUltimo.eq('obra_id', opts.obraId);
+  } else {
+    queryUltimo = queryUltimo.eq('empresa_id', opts.empresaId);
+  }
+
+  const { data: ultimoCentro, error: errorUltimo } = await queryUltimo;
 
   let novoCodigo = '01';
 
@@ -4789,4 +4797,80 @@ export async function deleteOrcamento(id: number) {
   await deleteOrcamentoGruposEItens(id);
   const { error } = await supabase.from('orcamentos').delete().eq('id', id);
   if (error) throw error;
+}
+
+/** Estrutura de um bloco do orçamento (estado local do wizard) para aplicar ao Controle de Insumo. */
+export type GrupoOrcamentoParaInsumo = {
+  codigo: string;
+  descricao: string;
+  itens: {
+    codigo: string;
+    descricao: string;
+    unidade: string;
+    quantidade: number;
+    precoUnitario: number;
+  }[];
+};
+
+/**
+ * Aplica o orçamento (estrutura de blocos e itens) ao Controle de Insumo da obra selecionada.
+ * Hierarquia: Bloco → ETAPA (centro_custo); Item do bloco → Composição (grupo); Detalhamento da composição → Itens orçamento.
+ * Preserva pai/filho/neto: etapa → composição → itens orçamento.
+ */
+export async function aplicarOrcamentoAoControleInsumo(
+  obraId: number,
+  empresaId: number | null,
+  grupos: GrupoOrcamentoParaInsumo[],
+  ufSINAPI: string,
+  percentualBDI: number = 0
+): Promise<{ etapas: number; composicoes: number; itens: number }> {
+  const empresaIdFinal = empresaId ?? (await getEmpresaId());
+  const uf = (ufSINAPI || 'sp').trim().toLowerCase();
+  const blocosComItens = grupos.filter((g) => g.itens && g.itens.length > 0);
+  let totalEtapas = 0;
+  let totalComposicoes = 0;
+  let totalItens = 0;
+
+  for (const bloco of blocosComItens) {
+    // Nome da etapa sem o número do bloco (número fica só no orçamento)
+    const descricaoEtapa = bloco.descricao;
+    const centroCusto = await insertCentroCusto(descricaoEtapa, {
+      empresaId: empresaIdFinal,
+      obraId,
+    });
+    totalEtapas += 1;
+
+    for (const itemOrc of bloco.itens) {
+      const grupo = await insertGrupo(centroCusto.id, itemOrc.descricao);
+      totalComposicoes += 1;
+
+      // Quantidade da composição no orçamento (técnica no orçamento = financeira no Controle de Insumo)
+      const qtdComposicao = Number(itemOrc.quantidade) > 0 ? Number(itemOrc.quantidade) : 0;
+
+      const detalhamento = await fetchDetalhamentoComposicao(
+        itemOrc.codigo.trim(),
+        uf
+      );
+      for (const row of detalhamento) {
+        const precoUnitSinapi =
+          (await getPrecoItemDetalhamento(row.tipo_item, row.codigo_item, uf)) ?? 0;
+        const unidade = (row.unidade_medida || 'un').trim();
+        // Preço Unit. no Controle de Insumo = Custo parcial (R$) do detalhamento = coef. × preço unit. SINAPI
+        const custoParcial = row.coeficiente * precoUnitSinapi;
+        // QTDE = Qtd da composição no orçamento (financeira); se não houver, usa o coeficiente
+        const quantidadeItem = qtdComposicao > 0 ? qtdComposicao : row.coeficiente;
+        await insertItemOrcamento(
+          grupo.id,
+          row.descricao,
+          unidade,
+          quantidadeItem,
+          custoParcial,
+          percentualBDI
+        );
+        totalItens += 1;
+      }
+    }
+  }
+
+  return { etapas: totalEtapas, composicoes: totalComposicoes, itens: totalItens };
 }

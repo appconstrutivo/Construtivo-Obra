@@ -3,23 +3,23 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  Eye, 
-  Pencil, 
-  Trash2, 
-  PlusCircle, 
-  DollarSign, 
-  TrendingUp, 
+import {
+  Eye,
+  Pencil,
+  Trash2,
+  PlusCircle,
+  DollarSign,
+  TrendingUp,
   TrendingDown,
   EyeOff,
   ArrowLeft,
   ChevronLeft
 } from 'lucide-react';
-import { 
-  fetchCentrosCusto, 
-  fetchGruposByCentroCusto, 
-  CentroCusto, 
-  Grupo, 
+import {
+  fetchCentrosCusto,
+  fetchGruposByCentroCusto,
+  CentroCusto,
+  Grupo,
   deleteGrupo,
   atualizarTodosTotais
 } from '@/lib/supabase';
@@ -35,7 +35,7 @@ export default function Grupos() {
   const { obraSelecionada } = useObra();
   const searchParams = useSearchParams();
   const centroCustoIdParam = searchParams.get('centroCustoId');
-  
+
   const [centrosCusto, setCentrosCusto] = useState<CentroCusto[]>([]);
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [centroCustoSelecionadoId, setCentroCustoSelecionadoId] = useState<number | null>(
@@ -62,7 +62,7 @@ export default function Grupos() {
     async function carregarCentrosCusto() {
       const data = await fetchCentrosCusto(obraSelecionada?.id);
       setCentrosCusto(data);
-      
+
       // Se temos um centroCustoId na URL, sempre use-o
       if (centroCustoIdParam) {
         const id = parseInt(centroCustoIdParam);
@@ -75,7 +75,7 @@ export default function Grupos() {
         setCentroCustoSelecionado(data[0]);
       }
     }
-    
+
     carregarCentrosCusto();
   }, [centroCustoIdParam, obraSelecionada]);
 
@@ -96,16 +96,16 @@ export default function Grupos() {
 
     try {
       setCarregando(true);
-      
+
       // Carregar dados imediatamente para exibição rápida
       const data = await fetchGruposByCentroCusto(centroCustoId);
-      
+
       // Filtrar apenas grupos da obra selecionada (garantir isolamento)
       const gruposFiltrados = data.filter(grupo => grupo.obra_id === obraSelecionada.id);
-      
+
       setGrupos(gruposFiltrados);
       setCarregando(false);
-      
+
       // Depois, executar a atualização de totais em segundo plano
       atualizarTodosTotais().then(() => {
         // Recarregar grupos após a atualização ser concluída
@@ -127,7 +127,7 @@ export default function Grupos() {
     setCentroCustoSelecionadoId(id);
     const centro = centrosCusto.find(c => c.id === id) || null;
     setCentroCustoSelecionado(centro);
-    
+
     // Atualizar a URL sem recarregar a página
     const url = new URL(window.location.href);
     url.searchParams.set('centroCustoId', id.toString());
@@ -137,7 +137,7 @@ export default function Grupos() {
   // Funções para manipulação de grupos
   async function handleExcluirGrupo() {
     if (!grupoSelecionado) return;
-    
+
     try {
       await deleteGrupo(grupoSelecionado.id);
       await carregarGrupos(centroCustoSelecionadoId!);
@@ -158,8 +158,8 @@ export default function Grupos() {
   }
 
   function formatarValor(valor: number) {
-    return valor.toLocaleString('pt-BR', { 
-      style: 'currency', 
+    return valor.toLocaleString('pt-BR', {
+      style: 'currency',
       currency: 'BRL',
       minimumFractionDigits: 2
     });
@@ -178,11 +178,11 @@ export default function Grupos() {
           <div>
             <Link href="/financeiro" className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4">
               <ArrowLeft size={16} className="mr-1" />
-              <span>Voltar para Centros de Custo</span>
+              <span>Voltar para Etapa</span>
             </Link>
             <div className="flex items-center">
-              <span className="text-sm text-gray-600 mr-2">Centro de custo selecionado:</span>
-              <select 
+              <span className="text-sm text-gray-600 mr-2">Etapa selecionada:</span>
+              <select
                 className="border border-gray-300 rounded-md py-1.5 pl-3 pr-8 text-sm"
                 value={centroCustoSelecionadoId?.toString() || ''}
                 onChange={handleChangeCentroCusto}
@@ -195,7 +195,7 @@ export default function Grupos() {
               </select>
             </div>
           </div>
-          
+
           <div className="flex gap-4">
             <button
               onClick={() => setMostrarBDI(!mostrarBDI)}
@@ -204,14 +204,14 @@ export default function Grupos() {
               {mostrarBDI ? <EyeOff size={18} /> : <Eye size={18} />}
               {mostrarBDI ? 'Ocultar BDI' : 'Mostrar BDI'}
             </button>
-            
+
             <button
               onClick={abrirModalNovoGrupo}
               className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               disabled={!centroCustoSelecionadoId}
             >
               <PlusCircle size={18} />
-              NOVO GRUPO
+              NOVA COMPOSIÇÃO
             </button>
           </div>
         </div>
@@ -258,8 +258,8 @@ export default function Grupos() {
               <span>{progressoTotal}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2.5">
-              <div 
-                className="bg-purple-600 h-2.5 rounded-full" 
+              <div
+                className="bg-purple-600 h-2.5 rounded-full"
                 style={{ width: `${progressoTotal}%` }}
               ></div>
             </div>
@@ -285,14 +285,14 @@ export default function Grupos() {
         {/* Tabela de Grupos */}
         <div className="bg-white rounded-lg shadow border overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="min-w-full divide-y divide-gray-200 table-fixed">
               <thead className="bg-gray-50">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                     ID
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Grupo
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-0 w-2/5">
+                    COMPOSIÇÃO
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Orçamento
@@ -320,7 +320,7 @@ export default function Grupos() {
                 {!centroCustoSelecionadoId ? (
                   <tr>
                     <td colSpan={mostrarBDI ? 8 : 7} className="px-6 py-4 text-center text-sm text-gray-500">
-                      Selecione um centro de custo para visualizar os grupos
+                      Selecione uma etapa para visualizar as composições
                     </td>
                   </tr>
                 ) : carregando ? (
@@ -332,22 +332,22 @@ export default function Grupos() {
                 ) : grupos.length === 0 ? (
                   <tr>
                     <td colSpan={mostrarBDI ? 8 : 7} className="px-6 py-4 text-center text-sm text-gray-500">
-                      Nenhum grupo encontrado para este centro de custo
+                      Nenhuma composição encontrada para esta etapa
                     </td>
                   </tr>
                 ) : (
                   grupos.map((grupo) => {
                     const saldo = (grupo.custo || 0) - (grupo.realizado || 0);
-                    const progresso = grupo.custo > 0 
-                      ? Math.round((grupo.realizado / grupo.custo) * 100) 
+                    const progresso = grupo.custo > 0
+                      ? Math.round((grupo.realizado / grupo.custo) * 100)
                       : 0;
-                    
+
                     return (
                       <tr key={grupo.id}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {grupo.codigo}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900 break-words align-top min-w-0">
                           {grupo.descricao}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -364,9 +364,8 @@ export default function Grupos() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           <div className="flex items-center gap-2">
                             {formatarValor(grupo.realizado || 0)}
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                              progresso >= 100 ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
-                            }`}>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${progresso >= 100 ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
+                              }`}>
                               {progresso}%
                             </span>
                           </div>
@@ -381,19 +380,19 @@ export default function Grupos() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-3">
-                            <Link 
+                            <Link
                               href={`/financeiro/itens?grupoId=${grupo.id}`}
                               className="text-blue-600 hover:text-blue-900"
                             >
                               <Eye size={18} />
                             </Link>
-                            <button 
+                            <button
                               onClick={() => abrirModalEditar(grupo)}
                               className="text-amber-600 hover:text-amber-900"
                             >
                               <Pencil size={18} />
                             </button>
-                            <button 
+                            <button
                               onClick={() => abrirModalExcluir(grupo)}
                               className="text-red-600 hover:text-red-900"
                             >
@@ -448,8 +447,8 @@ export default function Grupos() {
         isOpen={modalExcluirAberto}
         onClose={() => setModalExcluirAberto(false)}
         onConfirm={handleExcluirGrupo}
-        titulo="Excluir Grupo"
-        mensagem={`Tem certeza que deseja excluir o grupo "${grupoSelecionado?.descricao}"? Esta ação não pode ser desfeita.`}
+        titulo="Excluir Composição"
+        mensagem={`Tem certeza que deseja excluir a composição "${grupoSelecionado?.descricao}"? Esta ação não pode ser desfeita.`}
         confirmButtonText="Excluir"
         cancelButtonText="Cancelar"
       />

@@ -30,20 +30,20 @@ export default function EditarCentroCustoModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!descricao.trim()) {
       setErro('A descrição é obrigatória');
       return;
     }
-    
+
     setErro('');
     setCarregando(true);
-    
+
     try {
       await updateCentroCusto(centroCusto.id, descricao);
       onSuccess();
     } catch (error: any) {
-      setErro('Erro ao atualizar centro de custo: ' + (error.message || 'Erro desconhecido'));
+      setErro('Erro ao atualizar etapa: ' + (error.message || 'Erro desconhecido'));
     } finally {
       setCarregando(false);
     }
@@ -74,7 +74,7 @@ export default function EditarCentroCustoModal({
           <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">
             &#8203;
           </span>
-          
+
           <Transition.Child
             as={Fragment}
             enter="ease-out duration-300"
@@ -95,14 +95,14 @@ export default function EditarCentroCustoModal({
                   <XCircle className="h-6 w-6" aria-hidden="true" />
                 </button>
               </div>
-              
+
               <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <div className="sm:flex sm:items-start">
                   <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
                     <Dialog.Title as="h3" className="text-lg leading-6 font-medium text-gray-900">
-                      Editar Centro de Custo
+                      Editar Etapa
                     </Dialog.Title>
-                    
+
                     <div className="mt-4">
                       <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
@@ -118,7 +118,7 @@ export default function EditarCentroCustoModal({
                             disabled
                           />
                         </div>
-                        
+
                         <div>
                           <label htmlFor="descricao" className="block text-sm font-medium text-gray-700">
                             Descrição
@@ -134,13 +134,13 @@ export default function EditarCentroCustoModal({
                             disabled={carregando}
                           />
                         </div>
-                        
+
                         {erro && (
                           <div className="text-sm text-red-600 bg-red-50 p-2 rounded-md">
                             {erro}
                           </div>
                         )}
-                        
+
                         <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
                           <button
                             type="submit"

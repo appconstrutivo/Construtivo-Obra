@@ -11,8 +11,8 @@ import Link from 'next/link';
 const routeTitles: Record<string, string> = {
   '/': 'Construtivo - Sistema de Controle de Obras',
   '/dashboard': 'Construtivo - Sistema de Controle de Obras',
-  '/financeiro': 'Sistema de Controle de Obras',
-  '/financeiro/grupos': 'Grupos',
+  '/financeiro': 'ETAPA',
+  '/financeiro/grupos': 'Composição',
   '/financeiro/itens': 'Itens',
   '/medicoes': 'BOLETINS DE MEDIÇÃO',
   '/compras': 'BOLETINS DE COMPRA',
@@ -92,8 +92,8 @@ export default function Header() {
                 }
               }}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium min-w-[200px] justify-between ${isDashboardPage
-                  ? 'bg-blue-700 hover:bg-blue-800 cursor-pointer'
-                  : 'bg-blue-700/50 cursor-not-allowed opacity-75'
+                ? 'bg-blue-700 hover:bg-blue-800 cursor-pointer'
+                : 'bg-blue-700/50 cursor-not-allowed opacity-75'
                 }`}
               disabled={isLoadingObras || obras.length === 0 || !isDashboardPage}
               title={!isDashboardPage ? 'Alterar obra apenas disponível no Dashboard' : ''}
@@ -126,8 +126,8 @@ export default function Header() {
                       setObraMenuOpen(false);
                     }}
                     className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${obraSelecionada?.id === obra.id
-                        ? 'bg-blue-50 text-blue-700 font-medium'
-                        : 'text-gray-700'
+                      ? 'bg-blue-50 text-blue-700 font-medium'
+                      : 'text-gray-700'
                       }`}
                   >
                     <div className="font-medium truncate">{obra.nome}</div>
