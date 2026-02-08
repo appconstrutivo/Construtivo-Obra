@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { ReactNode, useEffect } from 'react';
 import { useAuth, clearAllAuthData } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
+import { LayoutProvider, useLayout } from '@/contexts/LayoutContext';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import LoadingSpinner from '../ui/LoadingSpinner';
@@ -50,9 +51,28 @@ export function AuthLayoutCheck({ children }: { children: ReactNode }) {
   
   // Para usuários autenticados em rotas protegidas, mostrar layout completo
   return (
+    <LayoutProvider>
+      <LayoutContent>{children}</LayoutContent>
+    </LayoutProvider>
+  );
+}
+
+function LayoutContent({ children }: { children: ReactNode }) {
+  const { mobileMenuOpen, closeMobileMenu, isMobile } = useLayout();
+
+  return (
     <div className="flex h-screen overflow-hidden">
+      {/* Overlay do menu mobile: só em viewport pequena */}
+      {isMobile && mobileMenuOpen && (
+        <button
+          type="button"
+          aria-label="Fechar menu"
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          onClick={closeMobileMenu}
+        />
+      )}
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <Header />
         <main className="flex-1 overflow-y-auto bg-gray-50">
           {children}

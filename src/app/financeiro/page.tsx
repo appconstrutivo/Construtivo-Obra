@@ -119,20 +119,20 @@ export default function ControleFinanceiro() {
     <main className="w-full p-6">
       <div className="flex flex-col space-y-6">
         <div className="flex justify-end items-center">
-          <div className="flex gap-4">
+          <div className="flex gap-2 md:gap-4">
             <button
               onClick={() => setMostrarBDI(!mostrarBDI)}
-              className="inline-flex items-center gap-2 rounded-md bg-gray-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              className="inline-flex items-center gap-1.5 md:gap-2 rounded-md bg-gray-600 px-3 py-2.5 md:px-4 md:py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 touch-manipulation"
             >
-              {mostrarBDI ? <EyeOff size={18} /> : <Eye size={18} />}
+              {mostrarBDI ? <EyeOff size={16} className="md:w-[18px] md:h-[18px] shrink-0" /> : <Eye size={16} className="md:w-[18px] md:h-[18px] shrink-0" />}
               {mostrarBDI ? 'Ocultar BDI' : 'Mostrar BDI'}
             </button>
 
             <button
               onClick={() => setModalNovoAberto(true)}
-              className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="inline-flex items-center gap-1.5 md:gap-2 rounded-md bg-blue-600 px-3 py-2.5 md:px-4 md:py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 touch-manipulation"
             >
-              <PlusCircle size={18} />
+              <PlusCircle size={16} className="md:w-[18px] md:h-[18px] shrink-0" />
               NOVA ETAPA
             </button>
           </div>
@@ -204,8 +204,120 @@ export default function ControleFinanceiro() {
           </div>
         </div>
 
-        {/* Tabela de Centros de Custo */}
-        <div className="bg-white rounded-lg shadow border overflow-hidden">
+        {/* Lista de Centros de Custo (Etapas) */}
+        {/* Mobile: layout em cards (somente abaixo de md) */}
+        <div className="md:hidden space-y-3">
+          {carregando ? (
+            <div className="bg-white rounded-lg border p-6 text-center text-sm text-gray-500">
+              Carregando...
+            </div>
+          ) : centrosCusto.length === 0 ? (
+            <div className="bg-white rounded-lg border p-6 text-center text-sm text-gray-500">
+              Nenhuma etapa encontrada
+            </div>
+          ) : (
+            centrosCusto.map((centro) => {
+              const saldo = (centro.custo || 0) - (centro.realizado || 0);
+              const progresso = centro.custo > 0
+                ? Math.round((centro.realizado / centro.custo) * 100)
+                : 0;
+
+              return (
+                <div
+                  key={centro.id}
+                  className="bg-white rounded-lg border shadow-sm overflow-hidden"
+                >
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="min-w-0 flex-1">
+                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          {centro.codigo}
+                        </span>
+                        <h3 className="text-base font-semibold text-gray-900 mt-0.5 break-words">
+                          {centro.descricao}
+                        </h3>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <Link
+                          href={`/financeiro/grupos?centroCustoId=${centro.id}`}
+                          className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 touch-manipulation"
+                          aria-label={`Ver grupos de ${centro.descricao}`}
+                        >
+                          <Eye size={18} />
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => abrirModalEditar(centro)}
+                          className="p-2 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 touch-manipulation"
+                          aria-label={`Editar ${centro.descricao}`}
+                        >
+                          <Pencil size={18} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => abrirModalExcluir(centro)}
+                          className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 touch-manipulation"
+                          aria-label={`Excluir ${centro.descricao}`}
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="text-gray-500 block text-xs">Orçado</span>
+                        <span className="font-medium text-gray-900">{formatarValor(centro.orcado || 0)}</span>
+                      </div>
+                      {mostrarBDI && (
+                        <div>
+                          <span className="text-gray-500 block text-xs">C/ BDI</span>
+                          <span className="font-medium text-gray-900">{formatarValor(centro.com_bdi || 0)}</span>
+                        </div>
+                      )}
+                      <div>
+                        <span className="text-gray-500 block text-xs">Custo</span>
+                        <span className="font-medium text-gray-900">{formatarValor(centro.custo || 0)}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500 block text-xs">Realizado</span>
+                        <span className="font-medium text-gray-900">
+                          {formatarValor(centro.realizado || 0)}{' '}
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${progresso >= 100 ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}`}>
+                            {progresso}%
+                          </span>
+                        </span>
+                      </div>
+                      <div className={mostrarBDI ? 'col-span-2' : ''}>
+                        <span className="text-gray-500 block text-xs">Saldo</span>
+                        <span className={`font-medium ${saldo < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          {saldo < 0 ? '-' : ''}{formatarValor(Math.abs(saldo))}
+                          <span className="text-xs ml-1">{saldo < 0 ? '↓' : '↑'}</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <span>Progresso:</span>
+                        <div className="flex-1 bg-gray-200 rounded-full h-1.5">
+                          <div
+                            className={`h-1.5 rounded-full ${progresso >= 100 ? 'bg-red-500' : 'bg-purple-500'}`}
+                            style={{ width: `${Math.min(progresso, 100)}%` }}
+                          />
+                        </div>
+                        <span>{progresso}%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop: tabela (somente md e acima) */}
+        <div className="hidden md:block bg-white rounded-lg shadow border overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>

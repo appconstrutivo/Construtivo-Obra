@@ -679,8 +679,8 @@ export default function Dashboard() {
   const podeNavegarProximo = periodoInicial + mesesExibidos < mesesDoAno.length;
 
   return (
-    <main className="flex-1 overflow-auto p-6">
-      <div className="space-y-6">
+    <main className="flex-1 overflow-auto p-4 md:p-6">
+      <div className="space-y-4 md:space-y-6">
         {/* Estatísticas principais */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatisticCard
@@ -731,19 +731,19 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Gráfico de Evolução da Obra com Navegação Temporal */}
           <div className="bg-white rounded-lg border shadow-sm">
-            <div className="p-6 pb-2">
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <h3 className="text-lg font-semibold">Evolução da Obra</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Comparativo entre receitas e despesas por mês
-                  </p>
-                </div>
-                {/* Controles de Navegação Temporal e Seletor de Ano */}
-                <div className="flex items-center gap-3">
-                  {/* Seletor de Ano */}
+            <div className="p-4 md:p-6 pb-2">
+              {/* Título: sempre em bloco */}
+              <div className="mb-3 md:mb-2">
+                <h3 className="text-base md:text-lg font-semibold">Evolução da Obra</h3>
+                <p className="text-xs md:text-sm text-muted-foreground">
+                  Comparativo entre receitas e despesas por mês
+                </p>
+              </div>
+              {/* Controles: em coluna no mobile, em linha no desktop */}
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="flex flex-wrap items-center gap-2 md:gap-3">
                   <div className="flex items-center gap-2">
-                    <label htmlFor="ano-selecionado" className="text-sm font-medium text-gray-700">
+                    <label htmlFor="ano-selecionado" className="text-xs md:text-sm font-medium text-gray-700">
                       Ano:
                     </label>
                     <select
@@ -751,9 +751,9 @@ export default function Dashboard() {
                       value={anoSelecionado}
                       onChange={(e) => {
                         setAnoSelecionado(Number(e.target.value));
-                        setPeriodoInicial(0); // Resetar para o início do ano quando mudar o ano
+                        setPeriodoInicial(0);
                       }}
-                      className="px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="px-2.5 py-1.5 text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       {Array.from({ length: 10 }, (_, i) => {
                         const ano = new Date().getFullYear() - 5 + i;
@@ -765,25 +765,24 @@ export default function Dashboard() {
                       })}
                     </select>
                   </div>
-                  {/* Controles de Navegação Temporal */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 md:gap-2">
                     <button
                       onClick={navegarAnterior}
                       disabled={!podeNavegarAnterior}
-                      className="p-2 rounded-lg border hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="p-2 rounded-lg border hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors touch-manipulation"
                       title={podeNavegarAnterior ? "Ver período anterior" : "Início do ano alcançado"}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="15,18 9,12 15,6"></polyline>
                       </svg>
                     </button>
-                    <span className="text-sm font-medium text-gray-700 min-w-[90px] text-center bg-gray-50 px-3 py-1 rounded-md">
+                    <span className="text-xs md:text-sm font-medium text-gray-700 min-w-[70px] md:min-w-[90px] text-center bg-gray-50 px-2 py-1.5 md:px-3 rounded-md">
                       {obterPeriodoAtual()}
                     </span>
                     <button
                       onClick={navegarProximo}
                       disabled={!podeNavegarProximo}
-                      className="p-2 rounded-lg border hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="p-2 rounded-lg border hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors touch-manipulation"
                       title={podeNavegarProximo ? "Ver próximo período" : "Final do ano alcançado"}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -794,7 +793,7 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-            <div className="px-6 pb-6">
+            <div className="px-3 md:px-6 pb-4 md:pb-6">
               <ChartCard
                 title=""
                 description=""
@@ -817,7 +816,7 @@ export default function Dashboard() {
           {/* Coluna da esquerda - Aferidores e Distribuição por Centro de Custo */}
           <div className="lg:col-span-6 space-y-6">
             <ContractProgressGauges
-              title="Avançado das Medições de Contratos"
+              title="Avanço das Medições de Contratos"
               description="Progresso monetário das negociações baseado em medições aprovadas"
               data={contractProgressData}
             />

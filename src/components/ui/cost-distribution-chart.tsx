@@ -61,9 +61,9 @@ export function CostDistributionChart({
     return (
       <Card className={cn("overflow-hidden", className)}>
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">{title}</CardTitle>
+          <CardTitle className="text-base md:text-lg font-semibold">{title}</CardTitle>
           {description && (
-            <p className="text-sm text-muted-foreground mt-1">{description}</p>
+            <p className="text-sm text-muted-foreground mt-1 hidden md:block">{description}</p>
           )}
         </CardHeader>
         <CardContent>
@@ -77,36 +77,37 @@ export function CostDistributionChart({
 
   return (
     <Card className={cn("overflow-hidden min-h-[400px]", className)}>
-      <CardHeader className="flex flex-row items-center justify-between pb-4">
-        <div>
-          <CardTitle className="text-lg font-semibold">{title}</CardTitle>
-          {description && (
-            <p className="text-sm text-muted-foreground mt-1">{description}</p>
+      <CardHeader className="pb-4">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div className="min-w-0">
+            <CardTitle className="text-base md:text-lg font-semibold">{title}</CardTitle>
+            {description && (
+              <p className="text-sm text-muted-foreground mt-1 hidden md:block">{description}</p>
+            )}
+          </div>
+          {/* Navegação: compacta no mobile */}
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+              <button
+                onClick={prevPage}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 disabled:opacity-50 touch-manipulation"
+                disabled={totalPages <= 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className="text-xs text-muted-foreground px-1 md:px-2 whitespace-nowrap">
+                {currentPage + 1} de {totalPages}
+              </span>
+              <button
+                onClick={nextPage}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 disabled:opacity-50 touch-manipulation"
+                disabled={totalPages <= 1}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
           )}
         </div>
-        
-        {/* Navegação */}
-        {totalPages > 1 && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={prevPage}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 disabled:opacity-50"
-              disabled={totalPages <= 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <span className="text-xs text-muted-foreground px-2">
-              {currentPage + 1} de {totalPages}
-            </span>
-            <button
-              onClick={nextPage}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 disabled:opacity-50"
-              disabled={totalPages <= 1}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-        )}
       </CardHeader>
       
       <CardContent className="pt-0">

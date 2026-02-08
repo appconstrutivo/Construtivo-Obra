@@ -1180,17 +1180,11 @@ export async function insertFornecedor(
   // Obter empresa_id do usuário autenticado
   const empresa_id = await getEmpresaId();
 
-  // Buscar o último código para incrementar (filtrado por empresa e obra, se houver)
-  let query = supabase
+  // Buscar o último código para incrementar (apenas por empresa_id: constraint é UNIQUE(codigo, empresa_id))
+  const { data: ultimoFornecedor, error: errorUltimo } = await supabase
     .from('fornecedores')
     .select('codigo')
-    .eq('empresa_id', empresa_id);
-
-  if (obraId) {
-    query = query.eq('obra_id', obraId);
-  }
-
-  const { data: ultimoFornecedor, error: errorUltimo } = await query
+    .eq('empresa_id', empresa_id)
     .order('codigo', { ascending: false })
     .limit(1);
 

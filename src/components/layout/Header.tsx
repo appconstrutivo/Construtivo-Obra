@@ -2,9 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { UserCircle, Bell, Search, LogOut, Settings, User, Building2, ChevronDown } from 'lucide-react';
+import { UserCircle, Search, LogOut, Settings, User, Building2, ChevronDown, Menu } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useObra } from '@/contexts/ObraContext';
+import { useLayout } from '@/contexts/LayoutContext';
 import Link from 'next/link';
 
 // Mapeamento de rotas para títulos
@@ -30,6 +31,7 @@ export default function Header() {
   const [obraMenuOpen, setObraMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
   const { obraSelecionada, obras, selecionarObra, isLoading: isLoadingObras } = useObra();
+  const { isMobile, setMobileMenuOpen } = useLayout();
   const menuRef = useRef<HTMLDivElement>(null);
   const obraMenuRef = useRef<HTMLDivElement>(null);
 
@@ -77,41 +79,55 @@ export default function Header() {
   const displayName = user?.user_metadata?.nome || user?.email?.split('@')[0] || 'Usuário';
 
   return (
-    <header className="bg-blue-600 text-white py-3 px-6 flex items-center justify-between">
-      <h1 className="text-xl font-semibold">{pageTitle}</h1>
+    <header className="bg-blue-600 text-white py-2.5 px-3 md:py-3 md:px-6 flex items-center justify-between gap-2 min-h-[52px] md:min-h-0">
+      {/* Esquerda: hamburger (só mobile) + título */}
+      <div className="flex items-center gap-2 min-w-0 flex-1 md:flex-initial">
+        {isMobile && (
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(true)}
+            className="flex-shrink-0 p-2 rounded-lg hover:bg-blue-700 transition-colors"
+            aria-label="Abrir menu"
+          >
+            <Menu size={22} />
+          </button>
+        )}
+        <h1 className="text-base md:text-xl font-semibold truncate">
+          {isMobile && (basePathname === '/dashboard' || basePathname === '/')
+            ? 'Construtivo'
+            : pageTitle}
+        </h1>
+      </div>
 
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
         {/* Seletor de Obras - não exibir na página de configurações */}
         {!isConfiguracoesPage && (
           <div className="relative" ref={obraMenuRef}>
             <button
               onClick={() => {
-                // Só permitir abrir o menu se estiver no dashboard
                 if (isDashboardPage) {
                   setObraMenuOpen(!obraMenuOpen);
                 }
               }}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium min-w-[200px] justify-between ${isDashboardPage
+              className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg transition-colors text-sm font-medium min-w-0 max-w-[140px] md:max-w-none md:min-w-[200px] justify-between ${isDashboardPage
                 ? 'bg-blue-700 hover:bg-blue-800 cursor-pointer'
                 : 'bg-blue-700/50 cursor-not-allowed opacity-75'
                 }`}
               disabled={isLoadingObras || obras.length === 0 || !isDashboardPage}
-              title={!isDashboardPage ? 'Alterar obra apenas disponível no Dashboard' : ''}
+              title={!isDashboardPage ? 'Alterar obra apenas disponível no Dashboard' : (obraSelecionada?.nome ?? 'Selecionar obra')}
             >
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <Building2 size={18} className="flex-shrink-0" />
-                <span className="truncate">
-                  {isLoadingObras
-                    ? 'Carregando...'
-                    : obraSelecionada
-                      ? obraSelecionada.nome
-                      : obras.length === 0
-                        ? 'Nenhuma obra'
-                        : 'Selecionar obra'}
-                </span>
-              </div>
+              <Building2 size={16} className="flex-shrink-0 md:w-[18px] md:h-[18px]" />
+              <span className="truncate max-w-[90px] md:max-w-none">
+                {isLoadingObras
+                  ? '...'
+                  : obraSelecionada
+                    ? obraSelecionada.nome
+                    : obras.length === 0
+                      ? 'Nenhuma'
+                      : 'Obra'}
+              </span>
               <ChevronDown
-                size={16}
+                size={14}
                 className={`flex-shrink-0 transition-transform ${obraMenuOpen ? 'rotate-180' : ''} ${!isDashboardPage ? 'opacity-50' : ''}`}
               />
             </button>
@@ -151,11 +167,6 @@ export default function Header() {
           />
           <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-300" />
         </form>
-
-        <button className="p-1.5 rounded-full hover:bg-blue-700 transition-colors relative">
-          <Bell size={20} />
-          <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
-        </button>
 
         <div className="relative" ref={menuRef}>
           <button

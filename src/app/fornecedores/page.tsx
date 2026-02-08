@@ -219,7 +219,7 @@ export default function FornecedoresPage() {
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50 text-left">
-                <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">CÓDIGO</th>
+                <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Nº</th>
                 <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">NOME</th>
                 <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">CONTATO</th>
                 <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">TELEFONE</th>
@@ -237,9 +237,14 @@ export default function FornecedoresPage() {
                   <td colSpan={6} className="px-6 py-4 text-center">Nenhum fornecedor encontrado</td>
                 </tr>
               ) : (
-                fornecedoresFiltrados.map((fornecedor) => (
+                fornecedoresFiltrados.map((fornecedor, index) => (
                   <tr key={fornecedor.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">{fornecedor.codigo}</td>
+                    <td
+                      className="px-6 py-4 whitespace-nowrap"
+                      title={`Código na empresa: ${fornecedor.codigo}`}
+                    >
+                      {index + 1}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">{fornecedor.nome}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{fornecedor.contato || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{fornecedor.telefone || '-'}</td>

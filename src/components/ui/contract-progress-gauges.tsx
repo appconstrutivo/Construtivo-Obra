@@ -151,7 +151,7 @@ export function ContractProgressGauges({
             <div>
               <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
               {description && (
-                <p className="text-sm text-gray-600 mt-1">{description}</p>
+                <p className="text-sm text-gray-600 mt-1 hidden md:block">{description}</p>
               )}
             </div>
             
@@ -211,7 +211,7 @@ export function ContractProgressGauges({
             <p className="text-gray-500">Nenhuma negociação encontrada</p>
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-4 min-h-[240px]">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 min-h-[240px]">
             {currentData.map((contract) => (
               <GaugeChart key={contract.id} contract={contract} />
             ))}

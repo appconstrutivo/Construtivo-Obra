@@ -331,17 +331,20 @@ export default function Itens() {
   return (
     <main className="w-full p-6">
       <div className="flex flex-col space-y-6">
-        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-          <div className="min-w-0 flex-1 flex flex-col gap-2">
-            <Link href={`/financeiro/grupos?centroCustoId=${grupoSelecionado?.centro_custo_id || ''}`} className="inline-flex items-center text-blue-600 hover:text-blue-800 w-fit">
+        <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-center md:gap-3">
+          <div className="min-w-0 flex-1 flex flex-col gap-2 md:gap-2">
+            <Link
+              href={`/financeiro/grupos?centroCustoId=${grupoSelecionado?.centro_custo_id || ''}`}
+              className="inline-flex items-center text-blue-600 hover:text-blue-800 w-fit text-sm touch-manipulation"
+            >
               <ArrowLeft size={16} className="mr-1 shrink-0" />
               <span>Voltar para Composição</span>
             </Link>
-            <div className="flex items-center gap-2 min-w-0">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-2 md:min-w-0">
               <span className="text-sm text-gray-600 shrink-0">Composição selecionada:</span>
               <select
                 title={grupoSelecionado?.descricao}
-                className="border border-gray-300 rounded-md py-1.5 pl-3 pr-8 text-sm min-w-0 max-w-full sm:max-w-[20rem] truncate bg-white"
+                className="border border-gray-300 rounded-md py-2 md:py-1.5 pl-3 pr-8 text-sm min-w-0 w-full md:w-auto md:max-w-[20rem] truncate bg-white touch-manipulation"
                 value={grupoSelecionadoId?.toString() || ''}
                 onChange={handleChangeGrupo}
               >
@@ -354,32 +357,38 @@ export default function Itens() {
             </div>
           </div>
 
-          <div className="flex gap-2 sm:gap-4 shrink-0">
+          <div className="flex gap-2 md:gap-4 shrink-0 self-center md:self-auto justify-center md:justify-start">
             <button
               onClick={() => setMostrarBDI(!mostrarBDI)}
-              className="inline-flex items-center gap-2 rounded-md bg-gray-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              className="inline-flex items-center gap-1.5 md:gap-2 rounded-md bg-gray-600 px-3 py-2.5 md:px-4 md:py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 touch-manipulation whitespace-nowrap"
             >
-              {mostrarBDI ? <EyeOff size={18} /> : <Eye size={18} />}
+              {mostrarBDI ? <EyeOff size={16} className="md:w-[18px] md:h-[18px] shrink-0" /> : <Eye size={16} className="md:w-[18px] md:h-[18px] shrink-0" />}
               {mostrarBDI ? 'Ocultar BDI' : 'Mostrar BDI'}
             </button>
 
             {tabAtiva === 'orcamento' ? (
               <button
                 onClick={abrirModalNovoItemOrcamento}
-                className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                className="inline-flex items-center gap-1.5 md:gap-2 rounded-md bg-blue-600 px-3 py-2.5 md:px-4 md:py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 touch-manipulation disabled:opacity-60 whitespace-nowrap"
                 disabled={!grupoSelecionadoId}
+                title="Novo Item Orçamento"
+                aria-label="Novo Item Orçamento"
               >
-                <PlusCircle size={18} />
-                NOVO ITEM ORÇAMENTO
+                <PlusCircle size={18} className="shrink-0 md:w-[18px] md:h-[18px]" />
+                <span className="md:hidden">ITEM ORÇAMENTO</span>
+                <span className="hidden md:inline">NOVO ITEM ORÇAMENTO</span>
               </button>
             ) : (
               <button
                 onClick={abrirModalNovoItemCusto}
-                className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                className="inline-flex items-center gap-1.5 md:gap-2 rounded-md bg-blue-600 px-3 py-2.5 md:px-4 md:py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 touch-manipulation disabled:opacity-60 whitespace-nowrap"
                 disabled={!grupoSelecionadoId}
+                title="Novo Item Custo"
+                aria-label="Novo Item Custo"
               >
-                <PlusCircle size={18} />
-                NOVO ITEM CUSTO
+                <PlusCircle size={18} className="shrink-0 md:w-[18px] md:h-[18px]" />
+                <span className="md:hidden">ITEM CUSTO</span>
+                <span className="hidden md:inline">NOVO ITEM CUSTO</span>
               </button>
             )}
           </div>
@@ -491,26 +500,137 @@ export default function Itens() {
             {tabAtiva === 'custo' && (
               <button
                 onClick={() => setOcultarColunaOrcamento(!ocultarColunaOrcamento)}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 touch-manipulation md:border-gray-300 md:bg-white md:shadow-sm md:hover:bg-gray-50"
+                title={ocultarColunaOrcamento ? 'Mostrar Coluna Orçamento' : 'Ocultar Coluna Orçamento'}
+                aria-label={ocultarColunaOrcamento ? 'Mostrar Coluna Orçamento' : 'Ocultar Coluna Orçamento'}
               >
                 {ocultarColunaOrcamento ? (
-                  <>
-                    <Eye size={16} className="mr-2" />
-                    Mostrar Coluna Orçamento
-                  </>
+                  <Eye size={16} className="shrink-0" />
                 ) : (
-                  <>
-                    <EyeOff size={16} className="mr-2" />
-                    Ocultar Coluna Orçamento
-                  </>
+                  <EyeOff size={16} className="shrink-0" />
                 )}
+                <span className="hidden md:inline">{ocultarColunaOrcamento ? 'Mostrar Coluna Orçamento' : 'Ocultar Coluna Orçamento'}</span>
+                <span className="md:hidden">Orçamento</span>
               </button>
             )}
           </div>
         </div>
 
-        {/* Tabela de Itens */}
-        <div className="bg-white rounded-lg shadow border overflow-hidden">
+        {/* Lista de Itens */}
+        {/* Mobile: layout em cards (somente abaixo de md) */}
+        <div className="md:hidden space-y-3">
+          {!grupoSelecionadoId ? (
+            <div className="bg-white rounded-lg border p-6 text-center text-sm text-gray-500">
+              Selecione uma composição para visualizar os itens
+            </div>
+          ) : carregando ? (
+            <div className="bg-white rounded-lg border p-6 text-center text-sm text-gray-500">
+              Carregando...
+            </div>
+          ) : tabAtiva === 'orcamento' ? (
+            itensOrcamento.length === 0 ? (
+              <div className="bg-white rounded-lg border p-6 text-center text-sm text-gray-500">
+                Nenhum item de orçamento encontrado
+              </div>
+            ) : (
+              itensOrcamento.map((item) => (
+                <div key={item.id} className="bg-white rounded-lg border shadow-sm overflow-hidden">
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="min-w-0 flex-1">
+                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">{item.codigo}</span>
+                        <h3 className="text-base font-semibold text-gray-900 mt-0.5 break-words">{item.descricao}</h3>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => abrirModalEditarItemOrcamento(item)}
+                          className="p-2 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 touch-manipulation"
+                          aria-label={`Editar ${item.descricao}`}
+                        >
+                          <Pencil size={18} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => abrirModalExcluirItemOrcamento(item)}
+                          className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 touch-manipulation"
+                          aria-label={`Excluir ${item.descricao}`}
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div><span className="text-gray-500 block text-xs">UN</span><span className="font-medium">{item.unidade}</span></div>
+                      <div><span className="text-gray-500 block text-xs">QTDE</span><span className="font-medium">{item.quantidade.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>
+                      <div><span className="text-gray-500 block text-xs">Preço Unit.</span><span className="font-medium">{formatarValor(item.preco_unitario)}</span></div>
+                      <div><span className="text-gray-500 block text-xs">Total</span><span className="font-medium text-gray-900">{formatarValor(item.total)}</span></div>
+                      {mostrarBDI && <div className="col-span-2"><span className="text-gray-500 block text-xs">C/ BDI</span><span className="font-medium">{formatarValor(item.com_bdi)}</span></div>}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )
+          ) : itensCusto.length === 0 ? (
+            <div className="bg-white rounded-lg border p-6 text-center text-sm text-gray-500">
+              Nenhum item de custo encontrado
+            </div>
+          ) : (
+            itensCusto.map((item) => {
+              const itemOrcamento = item.item_orcamento_id ? itensOrcamento.find(i => i.id === item.item_orcamento_id) : null;
+              return (
+                <div key={item.id} className="bg-white rounded-lg border shadow-sm overflow-hidden">
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="min-w-0 flex-1">
+                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">{item.codigo}</span>
+                        <h3 className="text-base font-semibold text-gray-900 mt-0.5 break-words">{item.descricao}</h3>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => abrirModalRelacionamentos(item)}
+                          className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 touch-manipulation"
+                          aria-label="Ver vínculos"
+                          title="Ver pedidos e medições relacionados"
+                        >
+                          <Link2 size={18} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => abrirModalEditarItemCusto(item)}
+                          className="p-2 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 touch-manipulation"
+                          aria-label={`Editar ${item.descricao}`}
+                        >
+                          <Pencil size={18} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => abrirModalExcluirItemCusto(item)}
+                          className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 touch-manipulation"
+                          aria-label={`Excluir ${item.descricao}`}
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      {!ocultarColunaOrcamento && <div><span className="text-gray-500 block text-xs">Item Orç.</span><span className="font-medium">{itemOrcamento ? itemOrcamento.codigo : '-'}</span></div>}
+                      <div><span className="text-gray-500 block text-xs">UN</span><span className="font-medium">{item.unidade}</span></div>
+                      <div><span className="text-gray-500 block text-xs">QTDE</span><span className="font-medium">{item.quantidade.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>
+                      <div><span className="text-gray-500 block text-xs">Total</span><span className="font-medium text-gray-900">{formatarValor(item.total)}</span></div>
+                      <div><span className="text-gray-500 block text-xs">Gasto</span><span className="font-medium">{formatarValor(item.realizado)}</span></div>
+                      <div><span className="text-gray-500 block text-xs">% Realizado</span><span className={`font-medium inline-flex items-center px-1.5 py-0.5 rounded text-xs ${item.realizado_percentual >= 100 ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}`}>{item.realizado_percentual.toFixed(1)}%</span></div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop: tabela (somente md e acima) */}
+        <div className="hidden md:block bg-white rounded-lg shadow border overflow-hidden">
           <div className="overflow-x-auto">
             {tabAtiva === 'orcamento' ? (
               <table className="min-w-full divide-y divide-gray-200 table-fixed">

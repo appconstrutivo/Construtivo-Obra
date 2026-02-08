@@ -196,20 +196,21 @@ export function RelacionamentosItemModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-6xl w-full mx-4 max-h-[90vh] overflow-auto">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-0 md:p-4">
+      <div className="bg-white rounded-none md:rounded-lg p-4 md:p-6 max-w-6xl w-full h-full md:h-auto md:max-h-[90vh] md:mx-4 overflow-auto">
+        <div className="flex justify-between items-start gap-3 mb-4 md:mb-6">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg md:text-2xl font-bold text-gray-900">
               Relacionamentos do Item
             </h2>
-            <p className="text-gray-600 mt-1">
+            <p className="text-sm md:text-base text-gray-600 mt-1 break-words">
               {itemCodigo} - {itemDescricao}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+            className="flex-shrink-0 p-2 -m-2 text-gray-400 hover:text-gray-600 text-2xl font-bold touch-manipulation"
+            aria-label="Fechar"
           >
             ×
           </button>
@@ -220,23 +221,58 @@ export function RelacionamentosItemModal({
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-6 md:space-y-8">
             {/* Negociações / Contratos */}
             <div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <h3 className="text-base md:text-xl font-semibold text-gray-900 mb-3 md:mb-4 flex items-center">
+                <svg className="w-5 h-5 mr-2 text-indigo-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 Negociações/Contratos ({negociacoes.length})
               </h3>
               
               {negociacoes.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">
+                <p className="text-gray-500 text-center py-6 md:py-8 text-sm md:text-base">
                   Nenhuma negociação/contrato encontrado para este item.
                 </p>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
+                <>
+                  {/* Mobile: cards */}
+                  <div className="md:hidden space-y-3">
+                    {negociacoes.map((n) => (
+                      <div key={n.item_negociacao_id} className="bg-gray-50 rounded-lg border p-4 space-y-2">
+                        <div className="flex justify-between items-start">
+                          <Link
+                            href={`/negociacoes/editar/${n.negociacao_id}`}
+                            className="text-blue-600 hover:text-blue-800 font-medium text-sm"
+                            title="Abrir contrato"
+                          >
+                            {n.numero}
+                          </Link>
+                          <span className="text-xs text-gray-500">{n.fornecedor_nome}</span>
+                        </div>
+                        <p className="text-sm text-gray-700 break-words">{n.descricao}</p>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <span className="text-gray-500">Qtde:</span>
+                          <span>{n.quantidade.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                          <span className="text-gray-500">V. Unit.:</span>
+                          <span>{formatCurrency(n.valor_unitario)}</span>
+                          <span className="text-gray-500">Total:</span>
+                          <span className="font-medium text-indigo-600">{formatCurrency(n.valor_total)}</span>
+                        </div>
+                        <button
+                          className="text-red-600 hover:text-red-800 text-sm font-medium disabled:opacity-50 touch-manipulation mt-2"
+                          onClick={() => removerVinculoNegociacao(n.item_negociacao_id)}
+                          disabled={removendoVinculoId === n.item_negociacao_id}
+                        >
+                          {removendoVinculoId === n.item_negociacao_id ? 'Removendo...' : 'Remover vínculo'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Desktop: tabela */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -304,25 +340,53 @@ export function RelacionamentosItemModal({
                     </tbody>
                   </table>
                 </div>
+                </>
               )}
             </div>
 
             {/* Pedidos de Compra */}
             <div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <h3 className="text-base md:text-xl font-semibold text-gray-900 mb-3 md:mb-4 flex items-center">
+                <svg className="w-5 h-5 mr-2 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                 </svg>
                 Pedidos de Compra ({pedidos.length})
               </h3>
               
               {pedidos.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">
+                <p className="text-gray-500 text-center py-6 md:py-8 text-sm md:text-base">
                   Nenhum pedido de compra encontrado para este item.
                 </p>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
+                <>
+                  {/* Mobile: cards */}
+                  <div className="md:hidden space-y-3">
+                    {pedidos.map((pedido) => (
+                      <div key={pedido.id} className="bg-gray-50 rounded-lg border p-4 space-y-2">
+                        <div className="flex justify-between items-start">
+                          <span className="font-medium text-gray-900">#{pedido.id}</span>
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            pedido.status === 'Aprovado' ? 'bg-green-100 text-green-800' :
+                            pedido.status === 'Pendente' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            {pedido.status}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600">{pedido.fornecedor_nome}</p>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <span className="text-gray-500">Data:</span>
+                          <span>{formatDate(pedido.data_compra)}</span>
+                          <span className="text-gray-500">Valor Item:</span>
+                          <span className="font-medium text-blue-600">{formatCurrency(pedido.item_valor)}</span>
+                          <span className="text-gray-500">Total Pedido:</span>
+                          <span>{formatCurrency(pedido.valor_total)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Desktop: tabela */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -379,25 +443,58 @@ export function RelacionamentosItemModal({
                     </tbody>
                   </table>
                 </div>
+                </>
               )}
             </div>
 
             {/* Medições */}
             <div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <h3 className="text-base md:text-xl font-semibold text-gray-900 mb-3 md:mb-4 flex items-center">
+                <svg className="w-5 h-5 mr-2 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                 </svg>
                 Medições ({medicoes.length})
               </h3>
               
               {medicoes.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">
+                <p className="text-gray-500 text-center py-6 md:py-8 text-sm md:text-base">
                   Nenhuma medição encontrada para este item.
                 </p>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
+                <>
+                  {/* Mobile: cards */}
+                  <div className="md:hidden space-y-3">
+                    {medicoes.map((medicao) => (
+                      <div key={medicao.id} className="bg-gray-50 rounded-lg border p-4 space-y-2">
+                        <div className="flex justify-between items-start">
+                          <span className="font-medium text-gray-900">#{medicao.id}</span>
+                          <span className="text-blue-600 text-sm font-medium">{medicao.contrato}</span>
+                        </div>
+                        <p className="text-sm text-gray-600">{medicao.fornecedor_nome}</p>
+                        <p className="text-sm text-gray-500">
+                          {formatDate(medicao.data_inicio)} a {formatDate(medicao.data_fim)}
+                        </p>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <span className="text-gray-500">Status:</span>
+                          <span>
+                            <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${
+                              medicao.status === 'Aprovado' ? 'bg-green-100 text-green-800' :
+                              medicao.status === 'Pendente' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                              {medicao.status}
+                            </span>
+                          </span>
+                          <span className="text-gray-500">Valor Item:</span>
+                          <span className="font-medium text-blue-600">{formatCurrency(medicao.item_valor)}</span>
+                          <span className="text-gray-500">Total Medição:</span>
+                          <span>{formatCurrency(medicao.valor_total)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Desktop: tabela */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -460,13 +557,14 @@ export function RelacionamentosItemModal({
                     </tbody>
                   </table>
                 </div>
+                </>
               )}
             </div>
 
             {/* Resumo */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="text-lg font-semibold text-gray-900 mb-2">Resumo</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-gray-50 p-4 md:p-4 rounded-lg">
+              <h4 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-2">Resumo</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
                 <div>
                   <p className="text-sm text-gray-600">Total em Pedidos Aprovados</p>
                   <p className="text-lg font-bold text-blue-600">
@@ -493,10 +591,10 @@ export function RelacionamentosItemModal({
           </div>
         )}
 
-        <div className="flex justify-end mt-6">
+        <div className="flex justify-center md:justify-end mt-6">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors"
+            className="w-full md:w-auto px-4 py-3 md:py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors font-medium touch-manipulation"
           >
             Fechar
           </button>

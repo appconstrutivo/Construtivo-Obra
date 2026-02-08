@@ -118,29 +118,35 @@ export function ChartCard({
     switch (type) {
       case 'area':
         return (
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart
-              data={data}
-              margin={{ top: 10, right: 10, left: 6, bottom: 0 }}
-            >
-              <defs>
-                {categories.map((category, index) => (
-                  <linearGradient key={category} id={`color-${category}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={colors[index % colors.length]} stopOpacity={0.8} />
-                    <stop offset="95%" stopColor={colors[index % colors.length]} stopOpacity={0.1} />
-                  </linearGradient>
-                ))}
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis 
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 11, fill: '#666' }}
-                tickFormatter={(value) => 
-                  value >= 1000 ? `${Math.round(value / 1000)}k` : value
-                }
-              />
+          <div className="w-full h-[260px] sm:h-[280px] md:h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={data}
+                margin={{ top: 8, right: 4, left: -8, bottom: 0 }}
+              >
+                <defs>
+                  {categories.map((category, index) => (
+                    <linearGradient key={category} id={`color-${category}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={colors[index % colors.length]} stopOpacity={0.8} />
+                      <stop offset="95%" stopColor={colors[index % colors.length]} stopOpacity={0.1} />
+                    </linearGradient>
+                  ))}
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 10 }}
+                  interval="preserveStartEnd"
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 10, fill: '#666' }}
+                  width={32}
+                  tickFormatter={(value) =>
+                    value >= 1000 ? `${Math.round(value / 1000)}k` : String(value)
+                  }
+                />
               <Tooltip 
                 formatter={(value) => new Intl.NumberFormat('pt-BR', { 
                   style: 'currency', 
@@ -156,18 +162,19 @@ export function ChartCard({
                 cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }}
               />
               <Legend />
-              {categories.map((category, index) => (
-                <Area
-                  key={category}
-                  type="monotone"
-                  dataKey={category}
-                  stroke={colors[index % colors.length]}
-                  fillOpacity={1}
-                  fill={`url(#color-${category})`}
-                />
-              ))}
-            </AreaChart>
-          </ResponsiveContainer>
+                {categories.map((category, index) => (
+                  <Area
+                    key={category}
+                    type="monotone"
+                    dataKey={category}
+                    stroke={colors[index % colors.length]}
+                    fillOpacity={1}
+                    fill={`url(#color-${category})`}
+                  />
+                ))}
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         );
       case 'bar':
         return (
@@ -259,68 +266,67 @@ export function ChartCard({
         );
       case 'pie':
         return (
-          <ResponsiveContainer width="100%" height={350}>
-            <PieChart>
-              <defs>
-                {modernPieColors.map((color, index) => (
-                  <linearGradient key={`gradient-${index}`} id={`pieGradient-${index}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={color} stopOpacity={1} />
-                    <stop offset="100%" stopColor={`${color}dd`} stopOpacity={0.8} />
-                  </linearGradient>
-                ))}
-              </defs>
-              <Pie
-                activeIndex={activeIndex}
-                activeShape={renderActiveShape}
-                data={data}
-                cx="50%"
-                cy="50%"
-                innerRadius={60} // Transformando em um gráfico de rosca (donut)
-                outerRadius={80}
-                paddingAngle={2} // Espaçamento entre fatias
-                dataKey={dataKey}
-                nameKey="name"
-                onMouseEnter={onPieEnter}
-                onMouseLeave={onPieLeave}
-                animationBegin={100}
-                animationDuration={800}
-                animationEasing="ease-out"
-              >
-                {data.map((entry, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
-                    fill={`url(#pieGradient-${index % modernPieColors.length})`} 
-                    stroke={modernPieColors[index % modernPieColors.length]}
-                    strokeWidth={1}
-                  />
-                ))}
-              </Pie>
-              <Tooltip 
-                formatter={(value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value))} 
-                labelFormatter={(name) => name}
-                contentStyle={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-                  border: 'none',
-                  padding: '12px'
-                }}
-              />
-              <Legend 
-                layout="vertical" 
-                verticalAlign="middle" 
-                align="right"
-                iconType="circle"
-                formatter={(value, entry, index) => {
-                  // Truncar nomes muito longos
-                  return value.length > 15 ? value.substring(0, 15) + '...' : value;
-                }}
-                wrapperStyle={{
-                  paddingLeft: '20px',
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
+          <div className="w-full h-[280px] sm:h-[320px] md:h-[350px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <defs>
+                  {modernPieColors.map((color, index) => (
+                    <linearGradient key={`gradient-${index}`} id={`pieGradient-${index}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={color} stopOpacity={1} />
+                      <stop offset="100%" stopColor={`${color}dd`} stopOpacity={0.8} />
+                    </linearGradient>
+                  ))}
+                </defs>
+                <Pie
+                  activeIndex={activeIndex}
+                  activeShape={renderActiveShape}
+                  data={data}
+                  cx="50%"
+                  cy="45%"
+                  innerRadius="55%"
+                  outerRadius="70%"
+                  paddingAngle={2}
+                  dataKey={dataKey}
+                  nameKey="name"
+                  onMouseEnter={onPieEnter}
+                  onMouseLeave={onPieLeave}
+                  animationBegin={100}
+                  animationDuration={800}
+                  animationEasing="ease-out"
+                >
+                  {data.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={`url(#pieGradient-${index % modernPieColors.length})`} 
+                      stroke={modernPieColors[index % modernPieColors.length]}
+                      strokeWidth={1}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  formatter={(value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value))} 
+                  labelFormatter={(name) => name}
+                  contentStyle={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+                    border: 'none',
+                    padding: '12px'
+                  }}
+                />
+                {/* Legenda abaixo do gráfico em todas as telas: evita truncamento e overflow no mobile */}
+                <Legend 
+                  layout="horizontal"
+                  verticalAlign="bottom"
+                  align="center"
+                  iconType="circle"
+                  iconSize={8}
+                  formatter={(value) => (value.length > 18 ? `${value.substring(0, 18)}…` : value)}
+                  wrapperStyle={{ paddingTop: 8 }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         );
       default:
         return null;
