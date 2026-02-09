@@ -136,18 +136,18 @@ export default function NovoFornecedorPage() {
   };
 
   return (
-    <main className="flex-1 overflow-auto p-6">
+    <main className="flex-1 overflow-auto p-4 md:p-6">
       <div className="flex items-center gap-2 mb-6">
         <Link 
           href="/fornecedores" 
-          className="text-blue-500 hover:text-blue-700"
+          className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-blue-500 hover:text-blue-700 hover:bg-blue-50 active:bg-blue-100"
         >
           <ArrowLeft size={20} />
         </Link>
-        <h1 className="text-2xl font-bold">NOVO FORNECEDOR</h1>
+        <h1 className="text-xl md:text-2xl font-bold">NOVO FORNECEDOR</h1>
       </div>
 
-      <div className="bg-white shadow-sm rounded-lg p-8 max-w-3xl mx-auto">
+      <div className="bg-white shadow-sm rounded-lg p-4 md:p-8 max-w-3xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
           <div className="bg-blue-100 p-4 rounded-full">
             <User size={32} className="text-blue-500" />
@@ -168,7 +168,7 @@ export default function NovoFornecedorPage() {
                 value={formData.nome}
                 onChange={handleChange}
                 placeholder="Nome completo ou razão social"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full min-h-[48px] md:min-h-0 px-4 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                 required
               />
             </div>
@@ -184,7 +184,7 @@ export default function NovoFornecedorPage() {
                 value={formData.documento}
                 onChange={handleChange}
                 placeholder="000.000.000-00, 00.000.000/0000-00 ou ISENTO"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full min-h-[48px] md:min-h-0 px-4 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                 required
               />
             </div>
@@ -200,7 +200,7 @@ export default function NovoFornecedorPage() {
                 value={formData.telefone}
                 onChange={handleChange}
                 placeholder="(00) 00000-0000"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full min-h-[48px] md:min-h-0 px-4 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
               />
             </div>
 
@@ -215,7 +215,7 @@ export default function NovoFornecedorPage() {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="exemplo@email.com"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full min-h-[48px] md:min-h-0 px-4 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
               />
             </div>
 
@@ -230,22 +230,22 @@ export default function NovoFornecedorPage() {
                 value={formData.contato}
                 onChange={handleChange}
                 placeholder="Nome da pessoa de contato"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full min-h-[48px] md:min-h-0 px-4 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
               />
             </div>
           </div>
 
-          <div className="flex justify-end gap-4 pt-4">
+          <div className="flex flex-col-reverse gap-3 md:flex-row md:justify-end md:gap-4 pt-4">
             <Link 
               href="/fornecedores" 
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 transition-colors"
+              className="w-full md:w-auto min-h-[48px] md:min-h-0 flex items-center justify-center px-4 py-3 md:py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors active:bg-gray-200"
             >
               Cancelar
             </Link>
             <button
               type="submit"
               disabled={loading}
-              className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full md:w-auto min-h-[48px] md:min-h-0 flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 md:py-2 rounded-lg transition-colors disabled:opacity-70 disabled:cursor-not-allowed active:bg-blue-700"
             >
               <Save size={18} />
               <span>Salvar Fornecedor</span>
@@ -254,7 +254,7 @@ export default function NovoFornecedorPage() {
         </form>
       </div>
 
-      <div className="mt-8 bg-white shadow-sm rounded-lg p-6 max-w-3xl mx-auto">
+      <div className="mt-6 md:mt-8 bg-white shadow-sm rounded-lg p-4 md:p-6 max-w-3xl mx-auto">
         <h2 className="text-lg font-semibold mb-3">Informações Importantes</h2>
         <ul className="list-disc pl-5 space-y-2 text-gray-600">
           <li>Os campos marcados com <span className="text-red-500">*</span> são obrigatórios.</li>

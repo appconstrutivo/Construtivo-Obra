@@ -332,34 +332,33 @@ export default function MedicoesPage() {
   };
 
   return (
-    <main className="flex-1 overflow-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        {/* Painel "Total em medições aprovadas" no lugar do título */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center gap-4">
-            <h2 className="text-lg font-semibold text-blue-800">Total em medições aprovadas:</h2>
-            <span className="text-xl font-bold text-blue-900">
+    <main className="flex-1 overflow-auto p-4 md:p-6">
+      {/* Topo: total + botões — no mobile empilha e ocupa largura total; no desktop mantém lado a lado */}
+      <div className="flex flex-col gap-4 mb-6 md:flex-row md:justify-between md:items-center">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 w-full md:w-auto">
+          <div className="flex flex-col gap-1 md:flex-row md:items-center md:gap-4">
+            <h2 className="text-base font-semibold text-blue-800 md:text-lg">Total em medições aprovadas:</h2>
+            <span className="text-lg font-bold text-blue-900 md:text-xl">
               {formatarValor(calcularTotalMedicoesAprovadas())}
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex gap-2 w-full md:w-auto">
           <button
             onClick={() => setMostrarFiltros(!mostrarFiltros)}
-            className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
+            className="flex-1 md:flex-initial bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-3 md:py-2 rounded-lg flex items-center justify-center gap-2 transition-colors min-h-[44px]"
           >
             <Search size={18} />
             <span>Filtros</span>
           </button>
-          <Link 
-            href="/medicoes/novo" 
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
+          <Link
+            href="/medicoes/novo"
+            className="flex-1 md:flex-initial bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 md:py-2 rounded-lg flex items-center justify-center gap-2 transition-colors min-h-[44px]"
           >
             <Plus size={18} />
-            <span>NOVA MEDIÇÃO</span>
+            <span className="hidden sm:inline">NOVA MEDIÇÃO</span>
+            <span className="sm:hidden">Nova</span>
           </Link>
-          
-
         </div>
       </div>
       
@@ -452,7 +451,71 @@ export default function MedicoesPage() {
         </div>
       )}
 
-      <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+      {/* Lista em cards — apenas mobile */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          <div className="bg-white rounded-xl shadow-sm p-6 text-center text-gray-500">Carregando medições...</div>
+        ) : medicoesFiltradas.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm p-6 text-center text-gray-500">Nenhum boletim de medição encontrado</div>
+        ) : (
+          medicoesFiltradas.map((medicao) => (
+            <div
+              key={medicao.id}
+              className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden active:bg-gray-50"
+            >
+              <Link href={`/medicoes/visualizar/${medicao.id}`} className="block p-4">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <span className="text-sm font-semibold text-gray-900">Nº {medicao.numero_ordem}</span>
+                  {renderStatusBadge(medicao.status)}
+                </div>
+                <p className="text-sm text-gray-600 truncate mb-0.5">
+                  {medicao.negociacao?.numero} · {medicao.negociacao?.fornecedor?.nome ?? '—'}
+                </p>
+                <p className="text-xs text-gray-500 mb-2">
+                  {formatarData(medicao.data_inicio)} a {formatarData(medicao.data_fim)}
+                </p>
+                <p className="text-base font-semibold text-gray-900">{formatarValor(medicao.valor_total)}</p>
+              </Link>
+              <div className="flex items-center border-t border-gray-100 px-4 py-2 gap-2 bg-gray-50/80">
+                <Link
+                  href={`/medicoes/visualizar/${medicao.id}`}
+                  className="flex-1 min-h-[44px] flex items-center justify-center gap-1.5 text-blue-600 font-medium text-sm"
+                >
+                  <Eye size={18} />
+                  Ver
+                </Link>
+                <Link
+                  href={`/medicoes/editar/${medicao.id}`}
+                  className="p-2.5 rounded-lg text-amber-600 hover:bg-amber-50 min-h-[44px] flex items-center justify-center"
+                  aria-label="Editar"
+                >
+                  <Edit size={20} />
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => handleGerarPDF(medicao)}
+                  disabled={gerandoPDF}
+                  className="p-2.5 rounded-lg text-green-600 hover:bg-green-50 disabled:opacity-50 min-h-[44px] flex items-center justify-center"
+                  aria-label="Gerar PDF"
+                >
+                  <FileText size={20} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => abrirModalExcluir(medicao)}
+                  className="p-2.5 rounded-lg text-red-600 hover:bg-red-50 min-h-[44px] flex items-center justify-center"
+                  aria-label="Excluir"
+                >
+                  <Trash2 size={20} />
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Tabela — apenas desktop (sem alteração visual) */}
+      <div className="hidden md:block bg-white shadow-sm rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full table-fixed">
             <thead>

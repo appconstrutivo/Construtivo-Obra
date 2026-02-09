@@ -126,34 +126,35 @@ export default function FornecedoresPage() {
   };
 
   return (
-    <main className="flex-1 overflow-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">FORNECEDORES</h1>
-        <div className="flex items-center gap-2">
+    <main className="flex-1 overflow-auto p-4 md:p-6">
+      <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center mb-6">
+        <h1 className="text-xl md:text-2xl font-bold">FORNECEDORES</h1>
+        <div className="flex gap-2 md:gap-2">
           <button
             onClick={() => setMostrarFiltros(!mostrarFiltros)}
-            className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
+            className="flex items-center gap-1.5 md:gap-2 px-3 py-2 md:py-2 min-h-[40px] md:min-h-0 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm md:text-base rounded-lg transition-colors active:bg-gray-400 shrink-0"
           >
-            <Search size={18} />
+            <Search size={16} className="md:w-[18px] md:h-[18px] shrink-0" />
             <span>Filtros</span>
           </button>
           <Link 
             href="/fornecedores/novo" 
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
+            className="flex items-center gap-1.5 md:gap-2 px-3 py-2 md:py-2 min-h-[40px] md:min-h-0 bg-blue-500 hover:bg-blue-600 text-white text-sm md:text-base rounded-lg transition-colors active:bg-blue-700 shrink-0"
           >
-            <Plus size={18} />
-            <span>NOVO FORNECEDOR</span>
+            <Plus size={16} className="md:w-[18px] md:h-[18px] shrink-0" />
+            <span className="md:hidden">Novo</span>
+            <span className="hidden md:inline">NOVO FORNECEDOR</span>
           </Link>
         </div>
       </div>
 
       {mostrarFiltros && (
         <div className="bg-white shadow-sm rounded-lg mb-4 p-4">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex flex-col gap-2 md:flex-row md:justify-between md:items-center mb-4">
             <h2 className="text-lg font-medium">Filtros</h2>
             <button
               onClick={limparFiltros}
-              className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm"
+              className="w-full md:w-auto min-h-[44px] md:min-h-0 text-blue-600 hover:text-blue-800 flex items-center justify-center gap-1 text-sm font-medium rounded-lg active:bg-blue-50"
             >
               <X size={16} />
               Limpar filtros
@@ -166,7 +167,7 @@ export default function FornecedoresPage() {
                 type="text"
                 value={codigoFiltro}
                 onChange={(e) => setCodigoFiltro(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md"
+                className="w-full min-h-[48px] md:min-h-0 p-2.5 md:p-2 border border-gray-300 rounded-lg text-base"
                 placeholder="Filtrar por código"
               />
             </div>
@@ -176,7 +177,7 @@ export default function FornecedoresPage() {
                 type="text"
                 value={nomeFiltro}
                 onChange={(e) => setNomeFiltro(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md"
+                className="w-full min-h-[48px] md:min-h-0 p-2.5 md:p-2 border border-gray-300 rounded-lg text-base"
                 placeholder="Filtrar por nome"
               />
             </div>
@@ -186,7 +187,7 @@ export default function FornecedoresPage() {
                 type="text"
                 value={contatoFiltro}
                 onChange={(e) => setContatoFiltro(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md"
+                className="w-full min-h-[48px] md:min-h-0 p-2.5 md:p-2 border border-gray-300 rounded-lg text-base"
                 placeholder="Filtrar por contato"
               />
             </div>
@@ -196,7 +197,7 @@ export default function FornecedoresPage() {
                 type="text"
                 value={telefoneFiltro}
                 onChange={(e) => setTelefoneFiltro(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md"
+                className="w-full min-h-[48px] md:min-h-0 p-2.5 md:p-2 border border-gray-300 rounded-lg text-base"
                 placeholder="Filtrar por telefone"
               />
             </div>
@@ -206,7 +207,7 @@ export default function FornecedoresPage() {
                 type="text"
                 value={emailFiltro}
                 onChange={(e) => setEmailFiltro(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md"
+                className="w-full min-h-[48px] md:min-h-0 p-2.5 md:p-2 border border-gray-300 rounded-lg text-base"
                 placeholder="Filtrar por e-mail"
               />
             </div>
@@ -215,7 +216,64 @@ export default function FornecedoresPage() {
       )}
 
       <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Layout mobile: cards */}
+        <div className="md:hidden divide-y divide-gray-200">
+          {loading ? (
+            <div className="px-6 py-12 text-center text-gray-500">Carregando fornecedores...</div>
+          ) : fornecedoresFiltrados.length === 0 ? (
+            <div className="px-6 py-12 text-center text-gray-500">Nenhum fornecedor encontrado</div>
+          ) : (
+            fornecedoresFiltrados.map((fornecedor, index) => (
+              <div key={fornecedor.id} className="p-4 space-y-3">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-gray-900 truncate">{fornecedor.nome}</p>
+                    <p className="text-sm text-gray-500" title={`Código: ${fornecedor.codigo}`}>
+                      Nº {index + 1}
+                    </p>
+                    {fornecedor.contato && (
+                      <p className="text-sm text-gray-600 truncate">{fornecedor.contato}</p>
+                    )}
+                    {fornecedor.telefone && (
+                      <p className="text-sm text-gray-600">{fornecedor.telefone}</p>
+                    )}
+                    {fornecedor.email && (
+                      <p className="text-sm text-gray-600 truncate">{fornecedor.email}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-2 border-t border-gray-100">
+                  <button
+                    onClick={() => {}}
+                    className="flex-1 min-h-[44px] flex items-center justify-center gap-2 rounded-lg border border-blue-600 text-blue-600 text-sm font-medium active:bg-blue-50"
+                    title="Visualizar"
+                  >
+                    <User size={18} />
+                    Ver
+                  </button>
+                  <Link
+                    href={`/fornecedores/editar/${fornecedor.id}`}
+                    className="flex-1 min-h-[44px] flex items-center justify-center gap-2 rounded-lg border border-amber-600 text-amber-600 text-sm font-medium active:bg-amber-50"
+                    title="Editar"
+                  >
+                    <Pencil size={18} />
+                    Editar
+                  </Link>
+                  <button
+                    onClick={() => abrirModalExcluir(fornecedor)}
+                    className="flex-1 min-h-[44px] flex items-center justify-center gap-2 rounded-lg border border-red-600 text-red-600 text-sm font-medium active:bg-red-50"
+                    title="Excluir"
+                  >
+                    <Trash2 size={18} />
+                    Excluir
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+        {/* Layout desktop: tabela */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50 text-left">
@@ -280,8 +338,8 @@ export default function FornecedoresPage() {
         </div>
       </div>
 
-      <div className="mt-8 bg-white shadow-sm rounded-lg p-6">
-        <h2 className="text-lg font-semibold mb-3">Dicas</h2>
+      <div className="mt-6 md:mt-8 bg-white shadow-sm rounded-lg p-4 md:p-6">
+        <h2 className="text-base md:text-lg font-semibold mb-3">Dicas</h2>
         <ul className="list-disc pl-5 space-y-2 text-gray-600">
           <li>Cadastre todos os fornecedores antes de criar contratos ou pedidos de compra.</li>
           <li>Mantenha os dados de contato atualizados para facilitar a comunicação.</li>

@@ -1047,11 +1047,11 @@ export default function OrcamentoPage() {
   // Lista de orçamentos
   if (modoEdicao === 'lista') {
     return (
-      <main className="flex-1 overflow-auto p-6">
-        <div className="flex justify-between items-center mb-6">
+      <main className="flex-1 overflow-auto p-4 md:p-6">
+        <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <Calculator className="w-8 h-8 text-primary" />
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <Calculator className="w-7 h-7 md:w-8 md:h-8 text-primary shrink-0" />
               Orçamento de Obras
             </h1>
             <p className="text-sm text-gray-500 mt-1">
@@ -1060,7 +1060,7 @@ export default function OrcamentoPage() {
           </div>
           <button
             onClick={novoOrcamento}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium"
+            className="w-full md:w-auto min-h-[48px] md:min-h-0 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-3 md:py-2 rounded-lg flex items-center justify-center gap-2 transition-colors font-medium active:bg-primary/80"
           >
             <Plus size={18} />
             Novo Orçamento
@@ -1079,83 +1079,138 @@ export default function OrcamentoPage() {
             <LoadingSpinner size="large" />
           </div>
         ) : orcamentos.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border p-12 text-center">
-            <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h2 className="text-lg font-semibold text-gray-700 mb-2">
+          <div className="bg-white rounded-xl shadow-sm border p-6 md:p-12 text-center">
+            <FileText className="w-14 h-14 md:w-16 md:h-16 text-gray-300 mx-auto mb-4" />
+            <h2 className="text-base md:text-lg font-semibold text-gray-700 mb-2">
               Nenhum orçamento criado
             </h2>
-            <p className="text-gray-500 mb-6 max-w-md mx-auto">
+            <p className="text-sm md:text-base text-gray-500 mb-6 max-w-md mx-auto">
               Crie seu primeiro orçamento para a obra. O fluxo inclui dados
               gerais, grupos de serviços, itens com quantidades e preços, BDI e
               resumo.
             </p>
             <button
               onClick={novoOrcamento}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-lg flex items-center gap-2 mx-auto transition-colors font-medium"
+              className="w-full md:w-auto min-h-[48px] md:min-h-0 bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-lg flex items-center justify-center gap-2 mx-auto transition-colors font-medium active:bg-primary/80"
             >
               <Plus size={20} />
               Criar Orçamento
             </button>
           </div>
         ) : (
-          <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50 text-left">
-                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase">
-                    Nº
-                  </th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase">
-                    Obra
-                  </th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase">
-                    Cliente
-                  </th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase">
-                    Total
-                  </th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase">
-                    Ações
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {orcamentos.map((o) => (
-                  <tr key={o.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium">{o.numero || '-'}</td>
-                    <td className="px-4 py-3">{o.obra_nome || '-'}</td>
-                    <td className="px-4 py-3">{o.cliente || '-'}</td>
-                    <td className="px-4 py-3 font-medium">
+          <>
+            {/* Layout mobile: cards */}
+            <div className="md:hidden space-y-3">
+              {orcamentos.map((o) => (
+                <div
+                  key={o.id}
+                  className="bg-white rounded-xl shadow-sm border p-4 space-y-3"
+                >
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-gray-900 truncate">
+                        {o.numero || o.obra_nome || 'Orçamento'}
+                      </p>
+                      {o.obra_nome && o.numero && (
+                        <p className="text-sm text-gray-500 truncate">{o.obra_nome}</p>
+                      )}
+                      {o.cliente && (
+                        <p className="text-sm text-gray-500 truncate">{o.cliente}</p>
+                      )}
+                    </div>
+                    <p className="font-semibold text-primary shrink-0">
                       {formatarMoeda(o.total_com_bdi)}
-                    </td>
-                    <td className="px-4 py-3 flex gap-2">
-                      <button
-                        onClick={() => abrirModalPdf(o)}
-                        className="text-primary hover:text-primary/80"
-                        title="Gerar PDF"
-                      >
-                        <FileDown size={18} />
-                      </button>
-                      <button
-                        onClick={() => editarOrcamento(o)}
-                        className="text-amber-600 hover:text-amber-800"
-                        title="Editar"
-                      >
-                        <Pencil size={18} />
-                      </button>
-                      <button
-                        onClick={() => abrirModalExcluir(o)}
-                        className="text-red-600 hover:text-red-800"
-                        title="Excluir"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </td>
+                    </p>
+                  </div>
+                  <div className="flex gap-2 pt-2 border-t border-gray-100">
+                    <button
+                      onClick={() => abrirModalPdf(o)}
+                      className="flex-1 min-h-[44px] flex items-center justify-center gap-2 rounded-lg border border-primary text-primary text-sm font-medium active:bg-primary/10"
+                      title="Gerar PDF"
+                    >
+                      <FileDown size={18} />
+                      PDF
+                    </button>
+                    <button
+                      onClick={() => editarOrcamento(o)}
+                      className="flex-1 min-h-[44px] flex items-center justify-center gap-2 rounded-lg border border-amber-600 text-amber-600 text-sm font-medium active:bg-amber-50"
+                      title="Editar"
+                    >
+                      <Pencil size={18} />
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => abrirModalExcluir(o)}
+                      className="flex-1 min-h-[44px] flex items-center justify-center gap-2 rounded-lg border border-red-600 text-red-600 text-sm font-medium active:bg-red-50"
+                      title="Excluir"
+                    >
+                      <Trash2 size={18} />
+                      Excluir
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Layout desktop: tabela */}
+            <div className="hidden md:block bg-white rounded-xl shadow-sm border overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50 text-left">
+                    <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase">
+                      Nº
+                    </th>
+                    <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase">
+                      Obra
+                    </th>
+                    <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase">
+                      Cliente
+                    </th>
+                    <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase">
+                      Total
+                    </th>
+                    <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase">
+                      Ações
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y">
+                  {orcamentos.map((o) => (
+                    <tr key={o.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 font-medium">{o.numero || '-'}</td>
+                      <td className="px-4 py-3">{o.obra_nome || '-'}</td>
+                      <td className="px-4 py-3">{o.cliente || '-'}</td>
+                      <td className="px-4 py-3 font-medium">
+                        {formatarMoeda(o.total_com_bdi)}
+                      </td>
+                      <td className="px-4 py-3 flex gap-2">
+                        <button
+                          onClick={() => abrirModalPdf(o)}
+                          className="text-primary hover:text-primary/80"
+                          title="Gerar PDF"
+                        >
+                          <FileDown size={18} />
+                        </button>
+                        <button
+                          onClick={() => editarOrcamento(o)}
+                          className="text-amber-600 hover:text-amber-800"
+                          title="Editar"
+                        >
+                          <Pencil size={18} />
+                        </button>
+                        <button
+                          onClick={() => abrirModalExcluir(o)}
+                          className="text-red-600 hover:text-red-800"
+                          title="Excluir"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
 
         <ConfirmacaoModal
@@ -1292,16 +1347,16 @@ export default function OrcamentoPage() {
   ];
 
   return (
-    <main className="flex-1 overflow-auto p-6">
+    <main className="flex-1 overflow-auto p-4 md:p-6">
       <div className="max-w-5xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Calculator className="w-8 h-8 text-primary" />
+        <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center mb-6">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Calculator className="w-7 h-7 md:w-8 md:h-8 text-primary shrink-0" />
             {orcamentoAtual ? 'Editar' : 'Novo'} Orçamento
           </h1>
           <button
             onClick={cancelar}
-            className="text-gray-600 hover:text-gray-800 flex items-center gap-1"
+            className="w-full md:w-auto min-h-[44px] md:min-h-0 flex items-center justify-center gap-1 text-gray-600 hover:text-gray-800 rounded-lg border border-gray-300 md:border-0 md:bg-transparent active:bg-gray-100"
           >
             <X size={18} />
             Cancelar
@@ -1309,18 +1364,18 @@ export default function OrcamentoPage() {
         </div>
 
         {/* Stepper */}
-        <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2">
+        <div className="flex items-center gap-2 mb-6 md:mb-8 overflow-x-auto pb-2 -mx-1">
           {etapas.map((e, i) => (
             <div key={e.num} className="flex items-center gap-2 shrink-0">
               <button
                 onClick={() => setEtapaAtual(e.num)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${etapaAtual === e.num
+                className={`flex items-center gap-2 px-3 py-2.5 md:py-2 min-h-[44px] md:min-h-0 rounded-lg text-sm font-medium transition-colors ${etapaAtual === e.num
                   ? 'bg-primary text-primary-foreground'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200 active:bg-gray-200'
                   }`}
               >
-                <e.icon size={16} />
-                {e.titulo}
+                <e.icon size={16} className="shrink-0" />
+                <span className="whitespace-nowrap">{e.titulo}</span>
               </button>
               {i < etapas.length - 1 && (
                 <ChevronRight className="w-4 h-4 text-gray-400" />
@@ -1331,7 +1386,7 @@ export default function OrcamentoPage() {
 
         {/* Etapa 1: Dados Gerais */}
         {etapaAtual === 1 && (
-          <div className="bg-white rounded-xl shadow-sm border p-6 space-y-4">
+          <div className="bg-white rounded-xl shadow-sm border p-4 md:p-6 space-y-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Building2 size={20} />
               Dados Gerais do Orçamento
@@ -1348,7 +1403,7 @@ export default function OrcamentoPage() {
                     setDadosGerais((p) => ({ ...p, numero: e.target.value }))
                   }
                   placeholder="Ex: ORC-2025-001"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full min-h-[48px] md:min-h-0 border border-gray-300 rounded-lg px-3 py-2.5 md:py-2 text-base"
                 />
               </div>
               <div>
@@ -1362,7 +1417,7 @@ export default function OrcamentoPage() {
                     setDadosGerais((p) => ({ ...p, obraNome: e.target.value }))
                   }
                   placeholder="Nome da obra"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full min-h-[48px] md:min-h-0 border border-gray-300 rounded-lg px-3 py-2.5 md:py-2 text-base"
                 />
               </div>
               <div>
@@ -1376,7 +1431,7 @@ export default function OrcamentoPage() {
                     setDadosGerais((p) => ({ ...p, cliente: e.target.value }))
                   }
                   placeholder="Nome do cliente"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full min-h-[48px] md:min-h-0 border border-gray-300 rounded-lg px-3 py-2.5 md:py-2 text-base"
                 />
               </div>
               <div>
@@ -1390,7 +1445,7 @@ export default function OrcamentoPage() {
                     setDadosGerais((p) => ({ ...p, endereco: e.target.value }))
                   }
                   placeholder="Endereço da obra"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full min-h-[48px] md:min-h-0 border border-gray-300 rounded-lg px-3 py-2.5 md:py-2 text-base"
                 />
               </div>
               <div>
@@ -1406,7 +1461,7 @@ export default function OrcamentoPage() {
                       dataEmissao: e.target.value,
                     }))
                   }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full min-h-[48px] md:min-h-0 border border-gray-300 rounded-lg px-3 py-2.5 md:py-2 text-base"
                 />
               </div>
               <div>
@@ -1439,7 +1494,7 @@ export default function OrcamentoPage() {
                     }))
                   }
                   placeholder="Nome do responsável"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full min-h-[48px] md:min-h-0 border border-gray-300 rounded-lg px-3 py-2.5 md:py-2 text-base"
                 />
               </div>
               <div>
@@ -1453,7 +1508,7 @@ export default function OrcamentoPage() {
                     setDadosGerais((p) => ({ ...p, crea: e.target.value }))
                   }
                   placeholder="Nº CREA"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full min-h-[48px] md:min-h-0 border border-gray-300 rounded-lg px-3 py-2.5 md:py-2 text-base"
                 />
               </div>
             </div>
@@ -1468,7 +1523,7 @@ export default function OrcamentoPage() {
                 }
                 placeholder="Descrição do escopo"
                 rows={3}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="w-full min-h-[80px] border border-gray-300 rounded-lg px-3 py-2.5 md:py-2 text-base"
               />
             </div>
           </div>
@@ -1476,7 +1531,7 @@ export default function OrcamentoPage() {
 
         {/* Etapa 2: Estrutura e Itens */}
         {etapaAtual === 2 && (
-          <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
+          <div className="bg-white rounded-xl shadow-sm border p-4 md:p-6 space-y-6">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <ListChecks size={20} />
               Estrutura e Itens do Orçamento
@@ -1485,22 +1540,24 @@ export default function OrcamentoPage() {
               Adicione itens em cada bloco. Código, descrição, unidade,
               quantidade e preço unitário.
             </p>
-            <div className="flex items-center gap-2 mb-4 p-3 bg-gray-50 rounded-lg">
-              <label className="text-sm font-medium text-gray-700">
-                UF para preço SINAPI:
-              </label>
-              <select
-                value={ufPrecoSINAPI}
-                onChange={(e) => setUfPrecoSINAPI(e.target.value)}
-                className="border border-gray-300 rounded px-2 py-1 text-sm"
-              >
-                {UFS_SINAPI.map((uf) => (
-                  <option key={uf} value={uf}>
-                    {uf}
-                  </option>
-                ))}
-              </select>
-              <span className="text-xs text-gray-500">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-2 mb-4 p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-2 shrink-0">
+                <label className="text-sm font-medium text-gray-700">
+                  UF para preço SINAPI:
+                </label>
+                <select
+                  value={ufPrecoSINAPI}
+                  onChange={(e) => setUfPrecoSINAPI(e.target.value)}
+                  className="min-h-[44px] md:min-h-0 border border-gray-300 rounded-lg px-3 py-2 text-sm md:px-2 md:py-1"
+                >
+                  {UFS_SINAPI.map((uf) => (
+                    <option key={uf} value={uf}>
+                      {uf}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <span className="text-xs text-gray-500 md:flex-1">
                 Busque por código ou descrição nos campos abaixo; o preço será da UF selecionada.
               </span>
             </div>
@@ -1510,8 +1567,8 @@ export default function OrcamentoPage() {
                 key={grupo.id}
                 className="border rounded-lg overflow-visible"
               >
-                <div className="bg-gray-50 px-4 py-3 flex justify-between items-center">
-                  <div className="flex gap-4">
+                <div className="bg-gray-50 px-4 py-3 flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
+                  <div className="flex flex-col gap-2 md:flex-row md:gap-4 md:flex-1 min-w-0">
                     <input
                       type="text"
                       value={grupo.codigo}
@@ -1524,7 +1581,7 @@ export default function OrcamentoPage() {
                           )
                         )
                       }
-                      className="w-16 border rounded px-2 py-1 text-sm font-medium"
+                      className="w-16 shrink-0 min-h-[44px] md:min-h-0 border rounded-lg md:rounded px-2 py-2 md:py-1 text-sm font-medium"
                     />
                     <input
                       type="text"
@@ -1538,26 +1595,230 @@ export default function OrcamentoPage() {
                           )
                         )
                       }
-                      className="flex-1 border rounded px-2 py-1 text-sm"
+                      className="flex-1 min-w-0 min-h-[44px] md:min-h-0 border rounded-lg md:rounded px-2 py-2 md:py-1 text-sm"
                       placeholder="Descrição do bloco"
                     />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-600">
+                  <div className="flex items-center justify-between md:justify-end gap-2 shrink-0">
+                    <span className="text-sm font-semibold text-gray-800 md:text-gray-600">
                       {formatarMoeda(
                         grupo.itens.reduce((s, i) => s + i.total, 0)
                       )}
                     </span>
                     <button
                       onClick={() => removerGrupo(grupo.id)}
-                      className="text-red-600 hover:text-red-800"
+                      className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-red-600 hover:text-red-800 hover:bg-red-50 active:bg-red-100"
                       title="Remover bloco"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={18} />
                     </button>
                   </div>
                 </div>
                 <div className="p-4">
+                  {/* Layout mobile: cards por item */}
+                  <div className="md:hidden space-y-3">
+                    {grupo.itens.map((item) => (
+                      <div
+                        key={item.id}
+                        className="bg-gray-50/80 rounded-xl border border-gray-200 p-4 space-y-3"
+                      >
+                        <div className="grid grid-cols-[1fr_auto] gap-2 items-start">
+                          <div className="min-w-0 space-y-2">
+                            <input
+                              type="text"
+                              value={item.codigo}
+                              onChange={(e) =>
+                                handleSinapiCodigoChange(
+                                  grupo.id,
+                                  item.id,
+                                  e.target.value
+                                )
+                              }
+                              onFocus={() => {
+                                if (item.codigo.trim()) {
+                                  setSinapiSearch((s) => ({
+                                    ...s,
+                                    grupoId: grupo.id,
+                                    itemId: item.id,
+                                    field: 'codigo',
+                                    term: item.codigo,
+                                    results: [],
+                                    loading: true,
+                                    open: true,
+                                  }));
+                                  runSinapiSearch(grupo.id, item.id, 'codigo', item.codigo);
+                                }
+                              }}
+                              className="w-full min-h-[44px] border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                              placeholder="Código SINAPI"
+                            />
+                            <div className="relative">
+                              <input
+                                type="text"
+                                value={item.descricao}
+                                onChange={(e) =>
+                                  handleSinapiDescricaoChange(
+                                    grupo.id,
+                                    item.id,
+                                    e.target.value
+                                  )
+                                }
+                                onFocus={() => {
+                                  if (item.descricao.trim()) {
+                                    setSinapiSearch((s) => ({
+                                      ...s,
+                                      grupoId: grupo.id,
+                                      itemId: item.id,
+                                      field: 'descricao',
+                                      term: item.descricao,
+                                      results: [],
+                                      loading: true,
+                                      open: true,
+                                    }));
+                                    runSinapiSearch(grupo.id, item.id, 'descricao', item.descricao);
+                                  }
+                                }}
+                                className="w-full min-h-[44px] border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                                placeholder="Descrição"
+                              />
+                              {sinapiSearch.grupoId === grupo.id &&
+                                sinapiSearch.itemId === item.id &&
+                                sinapiSearch.open && (
+                                  <div className="absolute left-0 right-0 top-full z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto w-full">
+                                    {sinapiSearch.loading ? (
+                                      <div className="px-3 py-4 text-sm text-gray-500">
+                                        Buscando...
+                                      </div>
+                                    ) : sinapiSearch.results.length === 0 ? (
+                                      <div className="px-3 py-4 text-sm text-gray-500">
+                                        Nenhuma composição encontrada.
+                                      </div>
+                                    ) : (
+                                      sinapiSearch.results.map((comp, idx) => (
+                                        <button
+                                          key={`${comp.codigo_composicao}-${idx}`}
+                                          type="button"
+                                          onClick={() =>
+                                            handleSelectSinapi(
+                                              grupo.id,
+                                              item.id,
+                                              comp
+                                            )
+                                          }
+                                          className="w-full text-left px-3 py-2.5 hover:bg-blue-50 border-b border-gray-100 last:border-0 text-sm"
+                                        >
+                                          <span className="font-medium text-gray-800">
+                                            {comp.codigo_composicao}
+                                          </span>
+                                          <span className="text-gray-600 block text-left break-words line-clamp-2">
+                                            {' — '}{comp.descricao}
+                                          </span>
+                                          {comp.preco != null && (
+                                            <span className="text-primary text-xs">
+                                              {formatarMoeda(comp.preco)} ({ufPrecoSINAPI})
+                                            </span>
+                                          )}
+                                        </button>
+                                      ))
+                                    )}
+                                  </div>
+                                )}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => removerItem(grupo.id, item.id)}
+                            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-red-600 hover:bg-red-50 active:bg-red-100 shrink-0"
+                            title="Remover item"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-0.5">Un.</label>
+                            <select
+                              value={item.unidade}
+                              onChange={(e) =>
+                                atualizarItem(
+                                  grupo.id,
+                                  item.id,
+                                  'unidade',
+                                  e.target.value
+                                )
+                              }
+                              className="w-full min-h-[44px] border border-gray-300 rounded-lg px-2 py-2 text-sm"
+                            >
+                              {UNIDADES.map((u) => (
+                                <option key={u} value={u}>
+                                  {u}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-0.5">Qtd</label>
+                            <input
+                              type="number"
+                              min={0}
+                              step={0.01}
+                              value={item.quantidade || ''}
+                              onChange={(e) =>
+                                atualizarItem(
+                                  grupo.id,
+                                  item.id,
+                                  'quantidade',
+                                  parseFloat(e.target.value) || 0
+                                )
+                              }
+                              className="w-full min-h-[44px] border border-gray-300 rounded-lg px-2 py-2 text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-0.5">Preço Unit.</label>
+                            <input
+                              type="number"
+                              min={0}
+                              step={0.01}
+                              value={item.precoUnitario || ''}
+                              onChange={(e) =>
+                                atualizarItem(
+                                  grupo.id,
+                                  item.id,
+                                  'precoUnitario',
+                                  parseFloat(e.target.value) || 0
+                                )
+                              }
+                              className="w-full min-h-[44px] border border-gray-300 rounded-lg px-2 py-2 text-sm"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                          <span className="text-sm font-semibold text-gray-800">
+                            Total: {formatarMoeda(item.total)}
+                          </span>
+                          {item.codigo?.trim() ? (
+                            <span className="flex items-center gap-1">
+                              {composicoesComDetalhamentoCustom.has(item.codigo) && (
+                                <span className="text-amber-600" title="Detalhamento editado">
+                                  <Pencil size={14} />
+                                </span>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => abrirDetalhamento(grupo.id, item)}
+                                className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 active:bg-primary/20"
+                                title="Detalhamento"
+                              >
+                                <Layers size={18} />
+                              </button>
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Layout desktop: tabela */}
+                  <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-left text-gray-500 border-b">
@@ -1770,9 +2031,10 @@ export default function OrcamentoPage() {
                       ))}
                     </tbody>
                   </table>
+                  </div>
                   <button
                     onClick={() => adicionarItem(grupo.id)}
-                    className="mt-2 text-primary hover:text-primary/80 flex items-center gap-1 text-sm font-medium"
+                    className="mt-4 md:mt-2 min-h-[48px] flex items-center justify-center gap-2 text-primary hover:text-primary/80 text-sm font-medium rounded-lg border border-dashed border-primary/40 active:bg-primary/5 py-2"
                   >
                     <Plus size={16} />
                     Adicionar item
@@ -1783,7 +2045,7 @@ export default function OrcamentoPage() {
 
             <button
               onClick={adicionarGrupo}
-              className="text-primary hover:text-primary/80 flex items-center gap-2 font-medium"
+              className="w-full md:w-auto min-h-[48px] md:min-h-0 text-primary hover:text-primary/80 flex items-center justify-center gap-2 font-medium rounded-lg border border-dashed border-primary/50 py-2 active:bg-primary/5"
             >
               <Plus size={18} />
               Adicionar bloco
@@ -1795,28 +2057,28 @@ export default function OrcamentoPage() {
               title={`Detalhamento — ${detalhamentoModal.codigo}`}
               description={detalhamentoModal.descricao ? detalhamentoModal.descricao.slice(0, 80) + (detalhamentoModal.descricao.length > 80 ? '…' : '') : ''}
               size="xl"
-              className="max-w-4xl"
+              className="max-w-4xl max-md:!max-w-[calc(100vw-0.5rem)] max-md:!max-h-[92dvh] max-md:flex max-md:flex-col max-md:!m-0"
               footer={
-                <div className="flex justify-between items-center w-full">
-                  <div>
+                <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center w-full">
+                  <div className="order-2 md:order-1">
                     {detalhamentoModal.hasCustom && (
                       <button
                         type="button"
                         onClick={() => void restaurarDetalhamento()}
                         disabled={detalhamentoModal.loading}
-                        className="px-4 py-2 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 disabled:opacity-50"
+                        className="w-full md:w-auto min-h-[48px] md:min-h-0 px-4 py-2.5 md:py-2 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 disabled:opacity-50 text-sm font-medium"
                       >
                         Restaurar valores de referência
                       </button>
                     )}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col-reverse gap-2 md:flex-row order-1 md:order-2">
                     {detalhamentoModal.itens.length > 0 && (
                       <button
                         type="button"
                         onClick={() => void salvarDetalhamento()}
                         disabled={detalhamentoModal.loading}
-                        className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                        className="w-full md:w-auto min-h-[48px] md:min-h-0 px-4 py-2.5 md:py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 font-medium active:bg-primary/80"
                       >
                         {detalhamentoModal.loading ? 'Salvando...' : 'Salvar alterações'}
                       </button>
@@ -1824,7 +2086,7 @@ export default function OrcamentoPage() {
                     <button
                       type="button"
                       onClick={fecharDetalhamento}
-                      className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800"
+                      className="w-full md:w-auto min-h-[48px] md:min-h-0 px-4 py-2.5 md:py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium active:bg-gray-400"
                     >
                       Fechar
                     </button>
@@ -1868,7 +2130,7 @@ export default function OrcamentoPage() {
                           )
                         }
                         placeholder="Buscar por código ou descrição..."
-                        className="w-full border rounded px-3 py-2 text-sm"
+                        className="w-full min-h-[48px] md:min-h-0 border border-gray-300 rounded-lg px-3 py-2.5 md:py-2 text-sm"
                       />
                       {inserirItemDetalhamentoBusca.loading && (
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">
@@ -1903,7 +2165,69 @@ export default function OrcamentoPage() {
                       })()}
                     </div>
                   </div>
-                  <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                  {/* Layout mobile: cards */}
+                  <div className="md:hidden space-y-3 max-h-[50vh] overflow-y-auto -mx-1 px-1">
+                    {detalhamentoModal.itens.map((i) => {
+                      const precoUnit = detalhamentoModal.precosPorItem[i.codigo_item] ?? 0;
+                      const custoParcial = i.coeficiente * precoUnit;
+                      return (
+                        <div
+                          key={`${i.codigo_item}-${i.is_from_ref ? i.id : i.id_custom ?? 0}`}
+                          className="bg-gray-50 rounded-xl border border-gray-200 p-4 space-y-3"
+                        >
+                          <div className="flex justify-between items-start gap-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-medium text-gray-500 uppercase">{i.tipo_item}</p>
+                              <p className="font-semibold text-gray-900">{i.codigo_item}</p>
+                              <p className="text-sm text-gray-600 break-words line-clamp-2">{i.descricao}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => void excluirItemDoDetalhamento(i)}
+                              disabled={detalhamentoModal.loading}
+                              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-red-600 hover:bg-red-50 active:bg-red-100 shrink-0 disabled:opacity-50"
+                              title="Excluir"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-0.5">Un.</label>
+                              <p className="font-medium">{i.unidade_medida}</p>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-0.5">Coef.</label>
+                              <input
+                                type="number"
+                                min={0}
+                                step={0.0001}
+                                value={i.coeficiente}
+                                onChange={(e) =>
+                                  atualizarCoeficienteNoModal(i, parseFloat(e.target.value) || 0)
+                                }
+                                className="w-full min-h-[44px] border border-gray-300 rounded-lg px-3 py-2 text-right text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-0.5">Preço unit.</label>
+                              <p className="font-medium">
+                                {precoUnit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+                              </p>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-0.5">Custo parcial</label>
+                              <p className="font-semibold text-gray-900">
+                                {custoParcial.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {/* Layout desktop: tabela */}
+                  <div className="hidden md:block overflow-x-auto max-h-96 overflow-y-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="text-left text-gray-600 border-b bg-gray-50">
@@ -1985,7 +2309,7 @@ export default function OrcamentoPage() {
 
         {/* Etapa 3: BDI e Resumo */}
         {etapaAtual === 3 && (
-          <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
+          <div className="bg-white rounded-xl shadow-sm border p-4 md:p-6 space-y-6">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Percent size={20} />
               BDI e Resumo
@@ -2004,7 +2328,7 @@ export default function OrcamentoPage() {
                   onChange={(e) =>
                     setPercentualBDI(parseFloat(e.target.value) || 0)
                   }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full min-h-[48px] md:min-h-0 border border-gray-300 rounded-lg px-3 py-2.5 md:py-2 text-base"
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Bonificações e Despesas Indiretas sobre o custo direto
@@ -2042,7 +2366,7 @@ export default function OrcamentoPage() {
                   }))
                 }
                 rows={2}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="w-full min-h-[80px] border border-gray-300 rounded-lg px-3 py-2.5 md:py-2 text-base"
                 placeholder="Observações gerais"
               />
             </div>
@@ -2059,7 +2383,7 @@ export default function OrcamentoPage() {
                   }))
                 }
                 rows={3}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="w-full min-h-[100px] border border-gray-300 rounded-lg px-3 py-2.5 md:py-2 text-base"
               />
             </div>
           </div>
@@ -2067,7 +2391,7 @@ export default function OrcamentoPage() {
 
         {/* Etapa 4: Revisão */}
         {etapaAtual === 4 && (
-          <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
+          <div className="bg-white rounded-xl shadow-sm border p-4 md:p-6 space-y-6">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Eye size={20} />
               Revisão do Orçamento
@@ -2100,35 +2424,59 @@ export default function OrcamentoPage() {
               </div>
             </div>
             <div className="border rounded-lg overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 text-left">
-                    <th className="px-4 py-2">Bloco</th>
-                    <th className="px-4 py-2 text-right">Subtotal</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {grupos
-                    .filter((g) => g.itens.length > 0)
-                    .map((g) => (
-                      <tr key={g.id} className="border-t">
-                        <td className="px-4 py-2">
-                          {g.codigo} – {g.descricao}
-                        </td>
-                        <td className="px-4 py-2 text-right font-medium">
-                          {formatarMoeda(
-                            g.itens.reduce((s, i) => s + i.total, 0)
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-              <div className="bg-gray-50 px-4 py-3 flex justify-between font-bold">
-                <span>Total com BDI</span>
-                <span className="text-primary text-lg">
-                  {formatarMoeda(totalComBDI)}
-                </span>
+              {/* Layout mobile: cards */}
+              <div className="md:hidden divide-y">
+                {grupos
+                  .filter((g) => g.itens.length > 0)
+                  .map((g) => (
+                    <div key={g.id} className="flex justify-between items-center px-4 py-3">
+                      <span className="text-sm text-gray-800 pr-2 truncate">
+                        {g.codigo} – {g.descricao}
+                      </span>
+                      <span className="font-medium shrink-0">
+                        {formatarMoeda(g.itens.reduce((s, i) => s + i.total, 0))}
+                      </span>
+                    </div>
+                  ))}
+                <div className="bg-gray-50 px-4 py-3 flex justify-between font-bold">
+                  <span>Total com BDI</span>
+                  <span className="text-primary text-lg">
+                    {formatarMoeda(totalComBDI)}
+                  </span>
+                </div>
+              </div>
+              {/* Layout desktop: tabela */}
+              <div className="hidden md:block">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 text-left">
+                      <th className="px-4 py-2">Bloco</th>
+                      <th className="px-4 py-2 text-right">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {grupos
+                      .filter((g) => g.itens.length > 0)
+                      .map((g) => (
+                        <tr key={g.id} className="border-t">
+                          <td className="px-4 py-2">
+                            {g.codigo} – {g.descricao}
+                          </td>
+                          <td className="px-4 py-2 text-right font-medium">
+                            {formatarMoeda(
+                              g.itens.reduce((s, i) => s + i.total, 0)
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+                <div className="bg-gray-50 px-4 py-3 flex justify-between font-bold">
+                  <span>Total com BDI</span>
+                  <span className="text-primary text-lg">
+                    {formatarMoeda(totalComBDI)}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -2142,8 +2490,8 @@ export default function OrcamentoPage() {
                 <p className="text-xs text-gray-600">
                   Crie Etapas, Composições e Itens de orçamento na obra escolhida a partir da estrutura atual.
                 </p>
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
+                  <div className="flex flex-col gap-1 md:flex-row md:items-center md:gap-2">
                     <label htmlFor="obra-controle-insumo" className="text-sm font-medium text-gray-700">
                       Obra:
                     </label>
@@ -2155,7 +2503,7 @@ export default function OrcamentoPage() {
                           e.target.value ? Number(e.target.value) : null
                         )
                       }
-                      className="border border-gray-300 rounded-lg px-3 py-2 text-sm min-w-[200px]"
+                      className="min-h-[48px] md:min-h-0 border border-gray-300 rounded-lg px-3 py-2.5 md:py-2 text-sm w-full md:min-w-[200px]"
                     >
                       <option value="">Selecione a obra</option>
                       {obras.map((o) => (
@@ -2169,7 +2517,7 @@ export default function OrcamentoPage() {
                     type="button"
                     onClick={abrirConfirmacaoAplicarInsumo}
                     disabled={!obraParaControleInsumo || aplicandoControleInsumo}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full md:w-auto min-h-[48px] md:min-h-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 md:py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed active:bg-primary/80"
                   >
                     {aplicandoControleInsumo ? (
                       <LoadingSpinner size="small" />
@@ -2208,11 +2556,11 @@ export default function OrcamentoPage() {
         )}
 
         {/* Navegação do wizard */}
-        <div className="flex justify-between mt-8">
+        <div className="flex flex-col-reverse gap-3 md:flex-row md:justify-between mt-6 md:mt-8">
           <button
             onClick={voltarEtapa}
             disabled={etapaAtual === 1}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full md:w-auto min-h-[48px] md:min-h-0 flex items-center justify-center gap-2 px-4 py-3 md:py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed active:bg-gray-100"
           >
             <ChevronLeft size={18} />
             Voltar
@@ -2220,7 +2568,7 @@ export default function OrcamentoPage() {
           {etapaAtual < totalEtapas ? (
             <button
               onClick={avancarEtapa}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"
+              className="w-full md:w-auto min-h-[48px] md:min-h-0 flex items-center justify-center gap-2 px-4 py-3 md:py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80"
             >
               Próximo
               <ChevronRight size={18} />
@@ -2229,7 +2577,7 @@ export default function OrcamentoPage() {
             <button
               onClick={() => void salvarOrcamento()}
               disabled={salvando}
-              className="flex items-center gap-2 px-6 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full md:w-auto min-h-[48px] md:min-h-0 flex items-center justify-center gap-2 px-6 py-3 md:py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed active:bg-green-800"
             >
               {salvando ? (
                 <LoadingSpinner size="small" />

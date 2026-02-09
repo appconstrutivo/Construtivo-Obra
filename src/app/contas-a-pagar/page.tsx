@@ -213,82 +213,87 @@ export default function ContasPagarPage() {
   };
 
   return (
-    <main className="flex-1 overflow-auto p-6">
-      {/* Header da página */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-3">
-            <Receipt className="text-primary" size={28} />
-            <h1 className="text-2xl font-bold text-gray-900">Contas a Pagar</h1>
+    <main className="flex-1 overflow-auto p-4 md:p-6">
+      {/* Header da página - Mobile: layout vertical, Desktop: layout horizontal */}
+      <div className="mb-4 md:mb-6">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-2">
+          <div className="flex items-center gap-3 min-w-0">
+            <Receipt className="text-primary shrink-0" size={28} />
+            <div className="min-w-0">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900 truncate">Contas a Pagar</h1>
+              <p className="text-sm text-gray-600 mt-0.5 md:hidden">
+                Controle de vencimentos e desembolso
+              </p>
+            </div>
           </div>
           <button
             onClick={carregarEstatisticas}
             disabled={loading}
-            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded-md flex items-center gap-2 transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded-lg text-sm font-medium transition-colors active:bg-blue-700 md:min-h-0 md:rounded-md shrink-0"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
             {loading ? 'Atualizando...' : 'Atualizar'}
           </button>
         </div>
-        <p className="text-gray-600">
+        <p className="hidden md:block text-gray-600">
           Controle financeiro das medições e compras com datas de vencimento e previsão de desembolso
         </p>
       </div>
 
-      {/* Estatísticas rápidas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-              <AlertCircle className="text-red-600" size={20} />
+      {/* Estatísticas rápidas - Mobile: 2x2 grid, Desktop: 4 colunas */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-4 md:mb-8">
+        <div className="bg-white rounded-lg shadow-sm border p-4 md:p-6">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="w-9 h-9 md:w-10 md:h-10 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
+              <AlertCircle className="text-red-600" size={18} />
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Vencidas</p>
-              <p className="text-xl font-bold text-red-600">
+            <div className="min-w-0">
+              <p className="text-xs md:text-sm text-gray-600 truncate">Vencidas</p>
+              <p className="text-base md:text-xl font-bold text-red-600 truncate" title={loading ? '' : formatarValor(estatisticas.vencidas)}>
                 {loading ? '...' : formatarValor(estatisticas.vencidas)}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-              <Calendar className="text-yellow-600" size={20} />
+        <div className="bg-white rounded-lg shadow-sm border p-4 md:p-6">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="w-9 h-9 md:w-10 md:h-10 bg-yellow-100 rounded-lg flex items-center justify-center shrink-0">
+              <Calendar className="text-yellow-600" size={18} />
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Próximos 7 dias</p>
-              <p className="text-xl font-bold text-yellow-600">
+            <div className="min-w-0">
+              <p className="text-xs md:text-sm text-gray-600 truncate">Próx. 7 dias</p>
+              <p className="text-base md:text-xl font-bold text-yellow-600 truncate" title={loading ? '' : formatarValor(estatisticas.proximos7Dias)}>
                 {loading ? '...' : formatarValor(estatisticas.proximos7Dias)}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <TrendingDown className="text-blue-600" size={20} />
+        <div className="bg-white rounded-lg shadow-sm border p-4 md:p-6">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="w-9 h-9 md:w-10 md:h-10 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
+              <TrendingDown className="text-blue-600" size={18} />
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Próximos 30 dias</p>
-              <p className="text-xl font-bold text-blue-600">
+            <div className="min-w-0">
+              <p className="text-xs md:text-sm text-gray-600 truncate">Próx. 30 dias</p>
+              <p className="text-base md:text-xl font-bold text-blue-600 truncate" title={loading ? '' : formatarValor(estatisticas.proximos30Dias)}>
                 {loading ? '...' : formatarValor(estatisticas.proximos30Dias)}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-              <Receipt className="text-gray-600" size={20} />
+        <div className="bg-white rounded-lg shadow-sm border p-4 md:p-6">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="w-9 h-9 md:w-10 md:h-10 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
+              <Receipt className="text-gray-600" size={18} />
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Total pendente</p>
-              <p className="text-xl font-bold text-gray-900">
+            <div className="min-w-0">
+              <p className="text-xs md:text-sm text-gray-600 truncate">Total pendente</p>
+              <p className="text-base md:text-xl font-bold text-gray-900 truncate" title={loading ? '' : formatarValor(estatisticas.totalPendente)}>
                 {loading ? '...' : formatarValor(estatisticas.totalPendente)}
               </p>
             </div>
@@ -297,13 +302,13 @@ export default function ContasPagarPage() {
       </div>
 
       {/* Abas */}
-      <div className="bg-white rounded-lg shadow-sm border">
-        {/* Tab Headers */}
+      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+        {/* Tab Headers - Mobile: touch-friendly, Desktop: padrão */}
         <div className="border-b">
           <div className="flex">
             <button
               onClick={() => setAbaAtiva('compras')}
-              className={`px-6 py-4 font-medium text-sm border-b-2 transition-all ${
+              className={`flex-1 md:flex-initial px-4 py-3.5 md:px-6 md:py-4 font-medium text-sm border-b-2 transition-all min-h-[48px] md:min-h-0 ${
                 abaAtiva === 'compras'
                   ? 'border-primary text-primary bg-primary/5'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -313,7 +318,7 @@ export default function ContasPagarPage() {
             </button>
             <button
               onClick={() => setAbaAtiva('medicoes')}
-              className={`px-6 py-4 font-medium text-sm border-b-2 transition-all ${
+              className={`flex-1 md:flex-initial px-4 py-3.5 md:px-6 md:py-4 font-medium text-sm border-b-2 transition-all min-h-[48px] md:min-h-0 ${
                 abaAtiva === 'medicoes'
                   ? 'border-primary text-primary bg-primary/5'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -324,8 +329,8 @@ export default function ContasPagarPage() {
           </div>
         </div>
 
-        {/* Tab Content */}
-        <div className="p-6">
+        {/* Tab Content - Mobile: padding reduzido */}
+        <div className="p-4 md:p-6">
           {abaAtiva === 'compras' && <ContasPagarCompras onDataChange={carregarEstatisticas} />}
           {abaAtiva === 'medicoes' && <ContasPagarMedicoes onDataChange={carregarEstatisticas} />}
         </div>

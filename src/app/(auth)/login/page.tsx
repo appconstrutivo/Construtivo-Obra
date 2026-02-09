@@ -16,31 +16,20 @@ export default function Login() {
   const router = useRouter();
   const { user, session, signIn } = useAuth();
 
-  // Verificação de sessão existente ao carregar a página
+  // Verificação de sessão existente ao carregar a página (getUser valida no servidor, evita cache)
   useEffect(() => {
     const verificarSessaoExistente = async () => {
-      console.log('🚪 RoutePersistenceManager: Desabilitado para rota de auth: /login');
-      
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        console.log('🚪 Verificando sessão existente...');
-        console.log('🚪 Sessão encontrada:', !!session);
-        console.log('🚪 Usuário encontrado:', !!session?.user);
-        console.log('🚪 Email do usuário:', session?.user?.email || 'Nenhum');
-        
-        if (session && session.user) {
-          console.log('✅ 🚪 Sessão válida encontrada! Redirecionando para dashboard...');
-          router.replace('/dashboard');
+        const { data: { user: currentUser }, error } = await supabase.auth.getUser();
+        if (error || !currentUser) {
           return;
         }
-        
-        console.log('❌ 🚪 Nenhuma sessão válida encontrada');
-      } catch (error) {
-        console.error('❌ 🚪 Erro ao verificar sessão:', error);
+        console.log('✅ Sessão válida no servidor, redirecionando para dashboard');
+        router.replace('/dashboard');
+      } catch {
+        // Sem sessão válida, permanece na tela de login
       }
     };
-
     verificarSessaoExistente();
   }, [router]);
 
@@ -150,29 +139,32 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 to-blue-800">
-      <div className="flex w-full max-w-4xl">
-        <div className="flex-1 p-10 flex flex-col justify-between">
+    <div className="min-h-screen min-h-dvh flex flex-col md:flex-row md:items-center md:justify-center bg-gradient-to-br from-blue-900 to-blue-800 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+      <div className="flex flex-col md:flex-row w-full max-w-4xl flex-1 md:flex-initial">
+        {/* Seção de branding - compacta no mobile */}
+        <div className="flex-shrink-0 px-6 pt-8 pb-6 md:flex-1 md:p-10 md:flex md:flex-col md:justify-between">
           <div>
-            <div className="flex items-center mb-8">
-              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <div className="flex items-center mb-4 md:mb-8">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 md:w-12 md:h-12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M2 20h20" />
                 <path d="M5 20v-4a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v4" />
                 <circle cx="12" cy="7" r="3" />
               </svg>
-              <h1 className="text-4xl font-bold text-white ml-3">Construtivo</h1>
+              <h1 className="text-2xl md:text-4xl font-bold text-white ml-2 md:ml-3">Construtivo</h1>
             </div>
-            <h2 className="text-2xl font-medium text-white mb-2">Gerencie seus projetos com eficiência</h2>
-            <p className="text-blue-200 mb-8">Acompanhe orçamentos, gastos e progresso em tempo real</p>
+            <h2 className="text-lg md:text-2xl font-medium text-white mb-1 md:mb-2">Gerencie seus projetos com eficiência</h2>
+            <p className="text-sm md:text-base text-blue-200 mb-0 md:mb-8">Acompanhe orçamentos, gastos e progresso em tempo real</p>
           </div>
-          <div className="text-white text-sm">
+          <div className="hidden md:block text-white text-sm">
             Desenvolvido por Eng. Civil <strong>Thiago Wendley</strong>
           </div>
         </div>
 
-        <div className="bg-white p-10 rounded-lg shadow-xl w-[450px]">
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">Bem-vindo</h2>
-          <p className="text-gray-600 mb-8">Faça login para acessar o sistema</p>
+        {/* Card do formulário - estilo bottom sheet no mobile */}
+        <div className="flex-1 flex flex-col min-h-0 overflow-y-auto bg-white px-5 pt-6 pb-8 rounded-t-3xl md:overflow-visible md:rounded-lg md:rounded-t-lg shadow-[0_-8px_30px_rgba(0,0,0,0.12)] md:shadow-xl md:p-10 md:w-[450px] md:flex-initial md:flex-none">
+          <div className="mx-auto w-12 h-1 rounded-full bg-gray-200 mb-6 md:hidden" aria-hidden />
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-1 md:mb-2">Bem-vindo</h2>
+          <p className="text-gray-600 mb-6 md:mb-8">Faça login para acessar o sistema</p>
 
           {erro && (
             <div className="bg-red-50 text-red-700 p-3 rounded mb-4 text-sm">
@@ -206,7 +198,7 @@ export default function Login() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 block w-full rounded-md border border-gray-300 py-3 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="pl-10 block w-full min-h-[48px] md:min-h-0 rounded-lg md:rounded-md border border-gray-300 py-3 text-base text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             </div>
@@ -235,7 +227,7 @@ export default function Login() {
                   required
                   value={senha}
                   onChange={(e) => setSenha(e.target.value)}
-                  className="pl-10 block w-full rounded-md border border-gray-300 py-3 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="pl-10 block w-full min-h-[48px] md:min-h-0 rounded-lg md:rounded-md border border-gray-300 py-3 text-base text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             </div>
@@ -243,7 +235,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={carregando}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70"
+              className="w-full flex justify-center min-h-[48px] py-3 px-4 border border-transparent rounded-lg md:rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 active:bg-blue-800"
             >
               {carregando ? (
                 <div className="flex items-center">
@@ -262,6 +254,10 @@ export default function Login() {
               </Link>
             </p>
           </div>
+
+          <p className="mt-8 pt-6 border-t border-gray-100 text-xs text-gray-400 text-center md:hidden">
+            Desenvolvido por Eng. Civil Thiago Wendley
+          </p>
         </div>
       </div>
     </div>

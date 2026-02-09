@@ -23,21 +23,22 @@ export async function middleware(request: NextRequest) {
 
   try {
     const supabase = createMiddlewareClient(request, response);
-    
-    // Verificar se o usuário está autenticado
-    const { data: { session }, error } = await supabase.auth.getSession();
-    
+
+    // Usar getUser() em vez de getSession(): valida a sessão com o servidor Auth do Supabase.
+    // getSession() lê apenas do storage (cookies) e pode retornar sessão inválida após logout.
+    const { data: { user }, error } = await supabase.auth.getUser();
+
     console.log(`[Middleware] Rota: ${path}`);
     console.log(`[Middleware] É rota de auth: ${isAuthRoute}`);
-    console.log(`[Middleware] Sessão encontrada: ${session ? 'SIM' : 'NÃO'}`);
-    console.log(`[Middleware] Erro na sessão: ${error ? error.message : 'NENHUM'}`);
-    
-    if (session?.user) {
-      console.log(`[Middleware] Usuário logado: ${session.user.email}`);
+    console.log(`[Middleware] Usuário autenticado: ${user ? 'SIM' : 'NÃO'}`);
+    console.log(`[Middleware] Erro na auth: ${error ? error.message : 'NENHUM'}`);
+
+    if (user) {
+      console.log(`[Middleware] Usuário logado: ${user.email}`);
     }
-    
-    // Se há erro ou não há sessão
-    if (error || !session) {
+
+    // Se há erro ou não há usuário (sessão inválida ou expirada)
+    if (error || !user) {
       // Se está tentando acessar rota protegida, redirecionar para login
       if (!isAuthRoute) {
         console.log(`[Middleware] ❌ Redirecionando ${path} para /login - sem sessão válida`);
@@ -48,15 +49,15 @@ export async function middleware(request: NextRequest) {
       return response;
     }
 
-    // Se há sessão válida e está tentando acessar rota de auth, redirecionar para dashboard
+    // Se há usuário válido e está tentando acessar rota de auth, redirecionar para dashboard
     // EXCETO para /redefinir-senha, que precisa permitir acesso mesmo com sessão (para criar senha após convite)
-    if (session && isAuthRoute && path !== '/redefinir-senha') {
+    if (user && isAuthRoute && path !== '/redefinir-senha') {
       console.log(`[Middleware] ✅ Usuário autenticado em ${path}, redirecionando para /dashboard`);
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
-    
+
     // Permitir acesso a /redefinir-senha mesmo com sessão (para criar senha após convite)
-    if (session && path === '/redefinir-senha') {
+    if (user && path === '/redefinir-senha') {
       console.log(`[Middleware] ✅ Permitindo acesso a /redefinir-senha mesmo com sessão (criação de senha)`);
       return response;
     }

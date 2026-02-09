@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { TrendingUp, Calendar, DollarSign, AlertCircle, Plus, Users, Filter, X, CheckCircle, Clock, Ban, Pencil } from 'lucide-react';
+import { TrendingUp, Calendar, DollarSign, AlertCircle, Plus, Users, Filter, X, CheckCircle, Clock, Ban, Pencil, ChevronDown, ChevronUp } from 'lucide-react';
 import { fetchParcelasReceber, fetchClientes, marcarParcelaComoRecebida, cancelarParcelaReceber, deleteParcelaReceber, atualizarParcelasAtrasadas } from '@/lib/supabase-clientes';
 import { useObra } from '@/contexts/ObraContext';
 import { Cliente, ParcelaReceber } from '@/lib/supabase';
@@ -42,6 +42,7 @@ export default function ContasReceberPage() {
   const [filtroCategoria, setFiltroCategoria] = useState<string>('');
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
+  const [filtrosMobileAbertos, setFiltrosMobileAbertos] = useState(false);
 
   // Modais
   const [modalClienteAberto, setModalClienteAberto] = useState(false);
@@ -301,7 +302,7 @@ export default function ContasReceberPage() {
 
   if (loading) {
     return (
-      <main className="flex-1 overflow-auto p-6">
+      <main className="flex-1 overflow-auto p-4 md:p-6">
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           <span className="ml-3 text-gray-600">Carregando contas a receber...</span>
@@ -311,112 +312,119 @@ export default function ContasReceberPage() {
   }
 
   return (
-    <main className="flex-1 overflow-auto p-6">
+    <main className="flex-1 overflow-auto p-4 md:p-6">
       {/* Header */}
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-2">
           <div className="flex items-center gap-3">
-            <TrendingUp className="text-primary" size={28} />
-            <h1 className="text-2xl font-bold text-gray-900">Contas a Receber</h1>
+            <TrendingUp className="text-primary shrink-0" size={24} />
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900">Contas a Receber</h1>
+              <p className="text-sm md:text-base text-gray-600 mt-0.5 md:hidden">
+                Controle financeiro de receitas e recebimentos
+              </p>
+            </div>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-2 shrink-0">
             <button
               onClick={() => setModalClienteAberto(true)}
-              className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-gray-900 rounded-md flex items-center gap-2 transition-colors"
+              className="flex items-center gap-1.5 md:gap-2 px-3 py-2 min-h-[40px] md:min-h-0 bg-secondary hover:bg-secondary/80 text-gray-900 text-sm md:text-base rounded-lg transition-colors active:bg-secondary/70 shrink-0"
             >
-              <Users size={18} />
-              Novo Cliente
+              <Users size={16} className="md:w-[18px] md:h-[18px] shrink-0" />
+              <span className="md:hidden">Cliente</span>
+              <span className="hidden md:inline">Novo Cliente</span>
             </button>
             <button
               onClick={() => setModalParcelaAberto(true)}
-              className="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-md flex items-center gap-2 transition-colors"
+              className="flex items-center gap-1.5 md:gap-2 px-3 py-2 min-h-[40px] md:min-h-0 bg-primary hover:bg-primary/90 text-white text-sm md:text-base rounded-lg transition-colors active:bg-primary/80 shrink-0"
             >
-              <Plus size={18} />
-              Novo Lançamento
+              <Plus size={16} className="md:w-[18px] md:h-[18px] shrink-0" />
+              <span className="md:hidden">Lançamento</span>
+              <span className="hidden md:inline">Novo Lançamento</span>
             </button>
             <button
               onClick={carregarDados}
               disabled={loading || refreshing}
-              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded-md flex items-center gap-2 transition-colors"
+              className="flex items-center gap-1.5 md:gap-2 px-3 py-2 min-h-[40px] md:min-h-0 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white text-sm md:text-base rounded-lg transition-colors shrink-0"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              {refreshing ? 'Atualizando...' : 'Atualizar'}
+              <span className="hidden sm:inline">{refreshing ? 'Atualizando...' : 'Atualizar'}</span>
             </button>
           </div>
         </div>
-        <p className="text-gray-600">
+        <p className="text-gray-600 hidden md:block mt-1">
           Controle financeiro de receitas, recebimentos de clientes e investidores
         </p>
       </div>
 
-      {/* Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-              <AlertCircle className="text-red-600" size={20} />
+      {/* Estatísticas - Mobile: 2x2 + 1; Desktop: 5 colunas */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-6 mb-4 md:mb-8">
+        <div className="bg-white rounded-xl shadow-sm border p-4 md:p-6">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="w-9 h-9 md:w-10 md:h-10 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
+              <AlertCircle className="text-red-600" size={18} />
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Vencidas</p>
-              <p className="text-xl font-bold text-red-600">
+            <div className="min-w-0">
+              <p className="text-xs md:text-sm text-gray-600 truncate">Vencidas</p>
+              <p className="text-base md:text-xl font-bold text-red-600 truncate" title={formatarValor(estatisticas.vencidas)}>
                 {formatarValor(estatisticas.vencidas)}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-              <Calendar className="text-yellow-600" size={20} />
+        <div className="bg-white rounded-xl shadow-sm border p-4 md:p-6">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="w-9 h-9 md:w-10 md:h-10 bg-yellow-100 rounded-lg flex items-center justify-center shrink-0">
+              <Calendar className="text-yellow-600" size={18} />
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Próximos 7 dias</p>
-              <p className="text-xl font-bold text-yellow-600">
+            <div className="min-w-0">
+              <p className="text-xs md:text-sm text-gray-600 truncate">Próx. 7 dias</p>
+              <p className="text-base md:text-xl font-bold text-yellow-600 truncate" title={formatarValor(estatisticas.proximos7Dias)}>
                 {formatarValor(estatisticas.proximos7Dias)}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Clock className="text-blue-600" size={20} />
+        <div className="bg-white rounded-xl shadow-sm border p-4 md:p-6">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="w-9 h-9 md:w-10 md:h-10 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
+              <Clock className="text-blue-600" size={18} />
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Próximos 30 dias</p>
-              <p className="text-xl font-bold text-blue-600">
+            <div className="min-w-0">
+              <p className="text-xs md:text-sm text-gray-600 truncate">Próx. 30 dias</p>
+              <p className="text-base md:text-xl font-bold text-blue-600 truncate" title={formatarValor(estatisticas.proximos30Dias)}>
                 {formatarValor(estatisticas.proximos30Dias)}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-              <TrendingUp className="text-orange-600" size={20} />
+        <div className="bg-white rounded-xl shadow-sm border p-4 md:p-6 col-span-2 md:col-span-1">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="w-9 h-9 md:w-10 md:h-10 bg-orange-100 rounded-lg flex items-center justify-center shrink-0">
+              <TrendingUp className="text-orange-600" size={18} />
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Total a receber</p>
-              <p className="text-xl font-bold text-orange-600">
+            <div className="min-w-0">
+              <p className="text-xs md:text-sm text-gray-600 truncate">Total a receber</p>
+              <p className="text-base md:text-xl font-bold text-orange-600 truncate" title={formatarValor(estatisticas.totalReceber)}>
                 {formatarValor(estatisticas.totalReceber)}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-              <CheckCircle className="text-green-600" size={20} />
+        <div className="bg-white rounded-xl shadow-sm border p-4 md:p-6 col-span-2 md:col-span-1">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="w-9 h-9 md:w-10 md:h-10 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
+              <CheckCircle className="text-green-600" size={18} />
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Total recebido</p>
-              <p className="text-xl font-bold text-green-600">
+            <div className="min-w-0">
+              <p className="text-xs md:text-sm text-gray-600 truncate">Total recebido</p>
+              <p className="text-base md:text-xl font-bold text-green-600 truncate" title={formatarValor(estatisticas.totalRecebido)}>
                 {formatarValor(estatisticas.totalRecebido)}
               </p>
             </div>
@@ -424,177 +432,198 @@ export default function ContasReceberPage() {
         </div>
       </div>
 
-      {/* Filtros */}
-      <div className="bg-white rounded-lg shadow-sm border mb-6">
-        <div className="p-4 border-b">
-          <div className="flex items-center gap-2">
-            <Filter size={18} className="text-gray-600" />
-            <h3 className="font-medium text-gray-900">Filtros</h3>
+      {/* Filtros - Mobile: retrátil; Desktop: sempre visível */}
+      {(() => {
+        const temFiltrosAtivos = filtroStatus !== 'todas' || !!filtroCliente || !!filtroCategoria || !!dataInicio || !!dataFim;
+        return (
+          <div className="bg-white rounded-lg shadow-sm border mb-4 md:mb-6 overflow-hidden">
+            {/* Mobile: botão para expandir/recolher */}
+            <button
+              type="button"
+              onClick={() => setFiltrosMobileAbertos(!filtrosMobileAbertos)}
+              className="md:hidden flex items-center justify-between w-full px-4 py-3.5 text-left font-medium text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-100"
+            >
+              <span className="flex items-center gap-2">
+                <Filter size={18} />
+                Filtros
+                {temFiltrosAtivos && (
+                  <span className="px-2 py-0.5 text-xs bg-primary/10 text-primary rounded-full">
+                    Ativos
+                  </span>
+                )}
+              </span>
+              {filtrosMobileAbertos ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+            </button>
+            {/* Desktop: título fixo */}
+            <div className="hidden md:block p-4 border-b">
+              <div className="flex items-center gap-2">
+                <Filter size={18} className="text-gray-600" />
+                <h3 className="font-medium text-gray-900">Filtros</h3>
+              </div>
+            </div>
+            {/* Conteúdo: mobile só quando aberto; desktop sempre */}
+            <div className={`${filtrosMobileAbertos ? 'block' : 'hidden'} md:block p-4`}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">Status</label>
+                  <select
+                    value={filtroStatus}
+                    onChange={(e) => setFiltroStatus(e.target.value)}
+                    className="w-full min-h-[44px] md:min-h-0 px-3 py-2.5 md:py-2 border border-gray-300 rounded-lg md:rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm md:text-base"
+                  >
+                    <option value="todas">Todas</option>
+                    <option value="pendente">Pendente</option>
+                    <option value="atrasado">Atrasado</option>
+                    <option value="recebido">Recebido</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">Cliente</label>
+                  <input
+                    type="text"
+                    value={filtroCliente}
+                    onChange={(e) => setFiltroCliente(e.target.value)}
+                    placeholder="Buscar..."
+                    className="w-full min-h-[44px] md:min-h-0 px-3 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm md:text-base"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">Categoria</label>
+                  <input
+                    type="text"
+                    value={filtroCategoria}
+                    onChange={(e) => setFiltroCategoria(e.target.value)}
+                    placeholder="Buscar..."
+                    className="w-full min-h-[44px] md:min-h-0 px-3 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm md:text-base"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">Data Início</label>
+                  <input
+                    type="date"
+                    value={dataInicio}
+                    onChange={(e) => setDataInicio(e.target.value)}
+                    className="w-full min-h-[44px] md:min-h-0 px-3 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm md:text-base"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">Data Fim</label>
+                  <input
+                    type="date"
+                    value={dataFim}
+                    onChange={(e) => setDataFim(e.target.value)}
+                    className="w-full min-h-[44px] md:min-h-0 px-3 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm md:text-base"
+                  />
+                </div>
+              </div>
+              {temFiltrosAtivos && (
+                <div className="mt-4">
+                  <button
+                    onClick={limparFiltros}
+                    className="w-full md:w-auto min-h-[44px] md:min-h-0 px-4 py-2.5 md:py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg flex items-center justify-center gap-2 transition-colors active:bg-gray-200 font-medium"
+                  >
+                    <X size={16} />
+                    Limpar Filtros
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-        <div className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">Status</label>
-              <select
-                value={filtroStatus}
-                onChange={(e) => setFiltroStatus(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
-              >
-                <option value="todas">Todas</option>
-                <option value="pendente">Pendente</option>
-                <option value="atrasado">Atrasado</option>
-                <option value="recebido">Recebido</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">Cliente</label>
-              <input
-                type="text"
-                value={filtroCliente}
-                onChange={(e) => setFiltroCliente(e.target.value)}
-                placeholder="Buscar cliente..."
-                className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">Categoria</label>
-              <input
-                type="text"
-                value={filtroCategoria}
-                onChange={(e) => setFiltroCategoria(e.target.value)}
-                placeholder="Buscar categoria..."
-                className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">Data Início</label>
-              <input
-                type="date"
-                value={dataInicio}
-                onChange={(e) => setDataInicio(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">Data Fim</label>
-              <input
-                type="date"
-                value={dataFim}
-                onChange={(e) => setDataFim(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          {(filtroStatus !== 'todas' || filtroCliente || filtroCategoria || dataInicio || dataFim) && (
-            <div className="mt-4">
-              <button
-                onClick={limparFiltros}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md flex items-center gap-2 transition-colors"
-              >
-                <X size={16} />
-                Limpar Filtros
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
+        );
+      })()}
 
       {/* Lista de Parcelas */}
       {parcelasFiltradas.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg shadow-sm border">
+        <div className="text-center py-8 md:py-12 px-4 bg-white rounded-xl shadow-sm border">
           <TrendingUp className="mx-auto text-gray-400 mb-4" size={48} />
           <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma conta encontrada</h3>
-          <p className="text-gray-600 mb-4">Não há contas a receber que correspondam aos filtros aplicados.</p>
+          <p className="text-gray-600 mb-6">Não há contas a receber que correspondam aos filtros aplicados.</p>
           <button
             onClick={() => setModalParcelaAberto(true)}
-            className="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-md inline-flex items-center gap-2 transition-colors"
+            className="w-full md:w-auto min-h-[48px] px-4 py-3 md:py-2 bg-primary hover:bg-primary/90 text-white rounded-lg inline-flex items-center justify-center gap-2 transition-colors active:bg-primary/80"
           >
             <Plus size={18} />
             Novo Lançamento
           </button>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3 md:space-y-4">
           {parcelasFiltradas.map((parcela) => {
             const diasParaVencimento = getDiasParaVencimento(parcela.data_vencimento);
+            const statusLabel = getStatusLabel(parcela.status, diasParaVencimento);
 
             return (
               <div
                 key={parcela.id}
-                className="bg-white border rounded-lg p-6 hover:shadow-md transition-shadow"
+                className="bg-white border rounded-xl p-4 md:p-6 hover:shadow-md transition-shadow"
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-3">
-                      <Users className="text-gray-600" size={20} />
-                      <div>
-                        <h3 className="font-semibold text-gray-900">
-                          {parcela.cliente?.nome || 'Cliente não encontrado'}
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          {parcela.cliente?.tipo} - {parcela.cliente?.documento}
-                        </p>
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <div className="flex-1 min-w-0">
+                    {/* Cabeçalho: cliente + status único no mobile */}
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                        <Users className="text-gray-600 shrink-0" size={20} />
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-gray-900 truncate">
+                            {parcela.cliente?.nome || 'Cliente não encontrado'}
+                          </h3>
+                          <p className="text-sm text-gray-600 truncate">
+                            {parcela.cliente?.tipo} - {parcela.cliente?.documento}
+                          </p>
+                        </div>
                       </div>
+                      <span className={`md:hidden shrink-0 inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-full font-medium ${getStatusColor(parcela.status, diasParaVencimento)}`}>
+                        {getStatusIcon(parcela.status, diasParaVencimento)}
+                        {statusLabel}
+                      </span>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="text-gray-500" size={16} />
-                        <div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4">
+                      <div className="flex items-start gap-2">
+                        <Calendar className="text-gray-500 shrink-0 mt-0.5" size={16} />
+                        <div className="min-w-0">
                           <p className="text-xs text-gray-500">Vencimento</p>
                           <p className="text-sm font-medium">
                             {formatarData(parcela.data_vencimento)}
                           </p>
                           {parcela.status !== 'Recebido' && parcela.status !== 'Cancelado' && (
-                            <p className={`text-xs font-medium ${diasParaVencimento < 0
-                              ? 'text-red-600'
-                              : diasParaVencimento <= 7
-                                ? 'text-yellow-600'
-                                : 'text-blue-600'
-                              }`}>
+                            <p className={`text-xs font-medium ${diasParaVencimento < 0 ? 'text-red-600' : diasParaVencimento <= 7 ? 'text-yellow-600' : 'text-blue-600'}`}>
                               {diasParaVencimento < 0
                                 ? `Vencida há ${Math.abs(diasParaVencimento)} dia(s)`
-                                : diasParaVencimento === 0
-                                  ? 'Vence hoje'
-                                  : `Vence em ${diasParaVencimento} dia(s)`
+                                : diasParaVencimento === 0 ? 'Vence hoje' : `Vence em ${diasParaVencimento} dia(s)`
                               }
                             </p>
                           )}
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="text-gray-500" size={16} />
-                        <div>
+                      <div className="flex items-start gap-2">
+                        <DollarSign className="text-gray-500 shrink-0 mt-0.5" size={16} />
+                        <div className="min-w-0">
                           <p className="text-xs text-gray-500">Valor</p>
                           <p className="text-sm font-medium">{formatarValor(parcela.valor)}</p>
                         </div>
                       </div>
 
-                      {parcela.categoria && (
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 bg-purple-100 rounded-full flex items-center justify-center">
-                            <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
+                      {parcela.categoria ? (
+                        <div className="flex items-start gap-2">
+                          <div className="w-4 h-4 mt-0.5 bg-purple-100 rounded-full flex items-center justify-center shrink-0">
+                            <div className="w-2 h-2 bg-purple-600 rounded-full" />
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <p className="text-xs text-gray-500">Categoria</p>
-                            <p className="text-sm font-medium">{parcela.categoria}</p>
+                            <p className="text-sm font-medium truncate">{parcela.categoria}</p>
                           </div>
                         </div>
-                      )}
+                      ) : null}
 
-                      <div className="flex items-center gap-2">
+                      {/* Status na grid: só no desktop (mobile mostra no header) */}
+                      <div className="hidden md:flex items-start gap-2">
                         {getStatusIcon(parcela.status, diasParaVencimento)}
                         <div>
                           <p className="text-xs text-gray-500">Status</p>
                           <span className={`inline-block px-2 py-1 text-xs rounded-full font-medium ${getStatusColor(parcela.status, diasParaVencimento)}`}>
-                            {getStatusLabel(parcela.status, diasParaVencimento)}
+                            {statusLabel}
                           </span>
                         </div>
                       </div>
@@ -626,9 +655,10 @@ export default function ContasReceberPage() {
                     )}
                   </div>
 
-                  <div className="flex flex-col items-end gap-2">
+                  {/* Ações - Mobile: área separada com border-t, botões organizados */}
+                  <div className="flex flex-wrap gap-2 pt-3 md:pt-0 border-t md:border-t-0 border-gray-100 md:flex-col md:items-end md:flex-nowrap">
                     <button
-                      className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors flex items-center gap-2"
+                      className="min-h-[44px] px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 active:bg-gray-300 flex-1 md:flex-initial"
                       onClick={() => {
                         setParcelaParaEditar(parcela);
                         setModalEditarParcelaAberto(true);
@@ -639,11 +669,11 @@ export default function ContasReceberPage() {
                     </button>
                     {parcela.status === 'Recebido' ? (
                       <>
-                        <span className="px-4 py-2 text-sm bg-green-100 text-green-800 rounded-md font-medium">
+                        <span className="px-4 py-2 text-sm bg-green-100 text-green-800 rounded-lg font-medium">
                           ✓ Recebido
                         </span>
                         <button
-                          className="px-4 py-2 text-sm bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors flex items-center gap-2"
+                          className="min-h-[44px] px-4 py-2 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors flex items-center justify-center gap-2 active:bg-red-300 flex-1 md:flex-initial"
                           onClick={() => handleExcluir(parcela.id)}
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -654,11 +684,11 @@ export default function ContasReceberPage() {
                       </>
                     ) : parcela.status === 'Cancelado' ? (
                       <>
-                        <span className="px-4 py-2 text-sm bg-gray-100 text-gray-800 rounded-md font-medium">
+                        <span className="px-4 py-2 text-sm bg-gray-100 text-gray-800 rounded-lg font-medium">
                           Cancelado
                         </span>
                         <button
-                          className="px-4 py-2 text-sm bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors flex items-center gap-2"
+                          className="min-h-[44px] px-4 py-2 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors flex items-center justify-center gap-2 active:bg-red-300 flex-1 md:flex-initial"
                           onClick={() => handleExcluir(parcela.id)}
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -670,7 +700,7 @@ export default function ContasReceberPage() {
                     ) : (
                       <>
                         <button
-                          className="px-4 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+                          className="min-h-[44px] px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 active:bg-primary/80 flex-1 md:flex-initial"
                           onClick={() => {
                             setParcelaSelecionada(parcela);
                             setDataRecebimento(new Date().toISOString().split('T')[0]);
@@ -680,13 +710,13 @@ export default function ContasReceberPage() {
                           Marcar como Recebido
                         </button>
                         <button
-                          className="px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+                          className="min-h-[44px] px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors flex items-center justify-center gap-2 active:bg-gray-400 flex-1 md:flex-initial"
                           onClick={() => handleCancelar(parcela.id)}
                         >
                           Cancelar
                         </button>
                         <button
-                          className="px-4 py-2 text-sm bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors flex items-center gap-2"
+                          className="min-h-[44px] px-4 py-2 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors flex items-center justify-center gap-2 active:bg-red-300 flex-1 md:flex-initial"
                           onClick={() => handleExcluir(parcela.id)}
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -712,7 +742,7 @@ export default function ContasReceberPage() {
 
       {/* Resumo */}
       {parcelasFiltradas.length > 0 && (
-        <div className="bg-gray-50 rounded-lg p-4 mt-6">
+        <div className="bg-gray-50 rounded-xl p-4 mt-6 md:mt-6">
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium text-gray-700">
               Total de {parcelasFiltradas.length} conta(s) exibida(s):
@@ -766,13 +796,13 @@ export default function ContasReceberPage() {
 
       {/* Modal de Recebimento */}
       {modalRecebimentoAberto && parcelaSelecionada && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="p-6 border-b">
-              <h2 className="text-xl font-bold text-gray-900">Confirmar Recebimento</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full my-4">
+            <div className="p-4 md:p-6 border-b">
+              <h2 className="text-lg md:text-xl font-bold text-gray-900">Confirmar Recebimento</h2>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-4 md:p-6 space-y-4 max-h-[calc(100vh-12rem)] overflow-y-auto">
               <div>
                 <p className="text-sm text-gray-600 mb-2">Cliente</p>
                 <p className="font-medium">{parcelaSelecionada.cliente?.nome}</p>
@@ -791,7 +821,7 @@ export default function ContasReceberPage() {
                   type="date"
                   value={dataRecebimento}
                   onChange={(e) => setDataRecebimento(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="w-full min-h-[48px] md:min-h-0 px-3 py-2.5 md:py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base"
                   required
                 />
               </div>
@@ -803,7 +833,7 @@ export default function ContasReceberPage() {
                 <select
                   value={formaRecebimento}
                   onChange={(e) => setFormaRecebimento(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="w-full min-h-[48px] md:min-h-0 px-3 py-2.5 md:py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base"
                   required
                 >
                   <option value="">Selecione...</option>
@@ -818,7 +848,7 @@ export default function ContasReceberPage() {
               </div>
             </div>
 
-            <div className="p-6 border-t flex gap-3 justify-end">
+            <div className="p-4 md:p-6 border-t flex flex-col-reverse gap-3 md:flex-row md:justify-end">
               <button
                 onClick={() => {
                   setModalRecebimentoAberto(false);
@@ -826,13 +856,13 @@ export default function ContasReceberPage() {
                   setDataRecebimento('');
                   setFormaRecebimento('');
                 }}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                className="w-full md:w-auto min-h-[48px] md:min-h-0 px-4 py-3 md:py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors active:bg-gray-200"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleMarcarComoRecebido}
-                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+                className="w-full md:w-auto min-h-[48px] md:min-h-0 px-4 py-3 md:py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors active:bg-primary/80"
               >
                 Confirmar Recebimento
               </button>

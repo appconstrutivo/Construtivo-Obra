@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
-import { Loader2, AlertTriangle, PlusCircle, Building2, Lock, Users, Mail, Shield, UserX, UserCheck, Edit2, X } from 'lucide-react';
+import { Loader2, AlertTriangle, PlusCircle, Building2, Lock, Users, Mail, Shield, UserX, UserCheck, Settings2, X, ArrowLeft } from 'lucide-react';
 import FormularioObra, { ObraFormData } from '@/components/obras/FormularioObra';
 import ModalPlanoProObras from '@/components/obras/ModalPlanoProObras';
+import ModalPermissoesUsuario from '@/components/configuracoes/ModalPermissoesUsuario';
 import { fetchObras, Obra } from '@/lib/supabase';
+import { getRoleLabel, getRoleBadgeColor, ROLES, type PermissoesUsuario } from '@/lib/permissoes';
 
 type Usuario = {
   id: string;
@@ -19,11 +21,14 @@ type Usuario = {
   data_convite: string | null;
   ultimo_acesso: string | null;
   created_at: string;
+  permissoes?: PermissoesUsuario | null;
 };
+
+type SectionKey = 'seguranca' | 'obras' | 'usuarios' | null;
 
 export default function ConfiguracoesPage() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'seguranca' | 'obras' | 'usuarios'>('seguranca');
+  const [sectionAtiva, setSectionAtiva] = useState<SectionKey>(null);
   
   // Estados para alteração de senha
   const [senhaAtual, setSenhaAtual] = useState('');
@@ -46,7 +51,7 @@ export default function ConfiguracoesPage() {
   const [modalConvidarUsuario, setModalConvidarUsuario] = useState(false);
   const [emailConvite, setEmailConvite] = useState('');
   const [roleConvite, setRoleConvite] = useState<'admin' | 'membro' | 'visualizador'>('membro');
-  const [editandoUsuario, setEditandoUsuario] = useState<Usuario | null>(null);
+  const [usuarioPermissoesAberto, setUsuarioPermissoesAberto] = useState<Usuario | null>(null);
 
   // Carregar dados ao iniciar
   useEffect(() => {
@@ -327,25 +332,29 @@ export default function ConfiguracoesPage() {
     }
   };
 
-  const handleAlterarRole = async (usuarioId: string, novaRole: 'admin' | 'membro' | 'visualizador') => {
+  const handleSalvarPermissoes = async (
+    usuarioId: string,
+    novaRole: 'admin' | 'membro' | 'visualizador',
+    permissoes: PermissoesUsuario | null
+  ) => {
     if (!empresaId) return;
 
     setCarregando(true);
     try {
       const { error } = await supabase
         .from('usuarios')
-        .update({ role: novaRole })
+        .update({ role: novaRole, permissoes })
         .eq('id', usuarioId)
         .eq('empresa_id', empresaId);
 
       if (error) throw error;
 
-      setMensagem({ tipo: 'sucesso', texto: 'Permissão alterada com sucesso!' });
+      setMensagem({ tipo: 'sucesso', texto: 'Permissões atualizadas com sucesso!' });
       await carregarUsuarios(empresaId);
-      setEditandoUsuario(null);
+      setUsuarioPermissoesAberto(null);
     } catch (error: any) {
-      console.error('Erro ao alterar role:', error);
-      setMensagem({ tipo: 'erro', texto: error.message || 'Erro ao alterar permissão' });
+      console.error('Erro ao atualizar permissões:', error);
+      setMensagem({ tipo: 'erro', texto: error.message || 'Erro ao atualizar permissões' });
     } finally {
       setCarregando(false);
     }
@@ -377,81 +386,77 @@ export default function ConfiguracoesPage() {
     }
   };
 
-  const getRoleLabel = (role: string) => {
-    const labels: Record<string, string> = {
-      admin: 'Administrador',
-      membro: 'Membro',
-      visualizador: 'Visualizador'
-    };
-    return labels[role] || role;
-  };
-
-  const getRoleBadgeColor = (role: string) => {
-    const colors: Record<string, string> = {
-      admin: 'bg-purple-100 text-purple-800',
-      membro: 'bg-blue-100 text-blue-800',
-      visualizador: 'bg-gray-100 text-gray-800'
-    };
-    return colors[role] || 'bg-gray-100 text-gray-800';
-  };
+  const exibirCards = sectionAtiva === null;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-4 md:p-6 max-w-5xl mx-auto">
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="bg-blue-600 p-6 text-white">
-          <h1 className="text-2xl font-bold">Configurações</h1>
-          <p className="text-blue-100">Gerencie suas configurações de conta</p>
-        </div>
-
         {mensagem && (
           <div className={`p-4 ${mensagem.tipo === 'sucesso' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
             {mensagem.texto}
           </div>
         )}
 
-        {/* Abas para navegação */}
-        <div className="flex border-b">
-          <button
-            className={`flex items-center gap-2 py-3 px-4 ${
-              activeTab === 'seguranca'
-                ? 'border-b-2 border-blue-500 text-blue-600 font-medium'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-            onClick={() => setActiveTab('seguranca')}
-          >
-            <Lock size={18} />
-            <span>Segurança</span>
-          </button>
-          <button
-            className={`flex items-center gap-2 py-3 px-4 ${
-              activeTab === 'obras'
-                ? 'border-b-2 border-blue-500 text-blue-600 font-medium'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-            onClick={() => setActiveTab('obras')}
-          >
-            <Building2 size={18} />
-            <span>Cadastro de Obra</span>
-          </button>
-          {roleUsuarioAtual === 'admin' && (
-            <button
-              className={`flex items-center gap-2 py-3 px-4 ${
-                activeTab === 'usuarios'
-                  ? 'border-b-2 border-blue-500 text-blue-600 font-medium'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-              onClick={() => setActiveTab('usuarios')}
-            >
-              <Users size={18} />
-              <span>Usuários e Permissões</span>
-            </button>
-          )}
-        </div>
+        {exibirCards ? (
+          /* Vista de cards das seções */
+          <div className="p-4 md:p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <button
+                type="button"
+                onClick={() => setSectionAtiva('seguranca')}
+                className="flex flex-col items-start p-5 rounded-xl border border-gray-200 bg-white text-left shadow-sm hover:shadow-md hover:border-blue-200 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                <div className="p-2.5 rounded-lg bg-blue-50 text-blue-600 mb-3">
+                  <Lock size={24} />
+                </div>
+                <h3 className="text-base font-semibold text-gray-900">Segurança</h3>
+                <p className="mt-1 text-sm text-gray-500">Altere sua senha e gerencie o acesso à sua conta.</p>
+              </button>
 
-        {/* Conteúdo da aba de segurança */}
-        {activeTab === 'seguranca' && (
-          <div className="p-6">
-            <h2 className="text-xl font-semibold mb-6">Segurança</h2>
+              <button
+                type="button"
+                onClick={() => setSectionAtiva('obras')}
+                className="flex flex-col items-start p-5 rounded-xl border border-gray-200 bg-white text-left shadow-sm hover:shadow-md hover:border-blue-200 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                <div className="p-2.5 rounded-lg bg-blue-50 text-blue-600 mb-3">
+                  <Building2 size={24} />
+                </div>
+                <h3 className="text-base font-semibold text-gray-900">Cadastro de obra e usuários</h3>
+                <p className="mt-1 text-sm text-gray-500">Cadastre obras e gerencie usuários da empresa.</p>
+              </button>
+
+              {roleUsuarioAtual === 'admin' && (
+                <button
+                  type="button"
+                  onClick={() => setSectionAtiva('usuarios')}
+                  className="flex flex-col items-start p-5 rounded-xl border border-gray-200 bg-white text-left shadow-sm hover:shadow-md hover:border-blue-200 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                >
+                  <div className="p-2.5 rounded-lg bg-blue-50 text-blue-600 mb-3">
+                    <Shield size={24} />
+                  </div>
+                  <h3 className="text-base font-semibold text-gray-900">Permissões</h3>
+                  <p className="mt-1 text-sm text-gray-500">Gerencie permissões e papéis dos usuários.</p>
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-2 p-4 border-b border-gray-100">
+              <button
+                type="button"
+                onClick={() => setSectionAtiva(null)}
+                className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-blue-600"
+              >
+                <ArrowLeft size={18} />
+                Voltar
+              </button>
+            </div>
+
+            {/* Conteúdo da seção Segurança */}
+            {sectionAtiva === 'seguranca' && (
+          <div className="p-4 md:p-6">
+            <h2 className="text-lg md:text-xl font-semibold mb-6">Segurança</h2>
 
             <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
               <div className="flex">
@@ -476,7 +481,7 @@ export default function ConfiguracoesPage() {
                   type="password"
                   value={senhaAtual}
                   onChange={(e) => setSenhaAtual(e.target.value)}
-                  className="block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                  className="block w-full min-h-[48px] md:min-h-0 rounded-lg border border-gray-300 py-2.5 md:py-2 px-3 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 text-base"
                   required
                 />
               </div>
@@ -490,7 +495,7 @@ export default function ConfiguracoesPage() {
                   type="password"
                   value={novaSenha}
                   onChange={(e) => setNovaSenha(e.target.value)}
-                  className="block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                  className="block w-full min-h-[48px] md:min-h-0 rounded-lg border border-gray-300 py-2.5 md:py-2 px-3 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 text-base"
                   required
                 />
                 <p className="mt-1 text-xs text-gray-500">Mínimo de 6 caracteres</p>
@@ -505,16 +510,16 @@ export default function ConfiguracoesPage() {
                   type="password"
                   value={confirmarSenha}
                   onChange={(e) => setConfirmarSenha(e.target.value)}
-                  className="block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                  className="block w-full min-h-[48px] md:min-h-0 rounded-lg border border-gray-300 py-2.5 md:py-2 px-3 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 text-base"
                   required
                 />
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex flex-col-reverse md:flex-row md:justify-end">
                 <button
                   type="submit"
                   disabled={carregando}
-                  className="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center space-x-2 disabled:opacity-70"
+                  className="w-full md:w-auto min-h-[48px] md:min-h-0 py-3 md:py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center justify-center space-x-2 disabled:opacity-70 active:bg-blue-800"
                 >
                   {carregando && <Loader2 className="w-4 h-4 animate-spin" />}
                   <span>{carregando ? 'Alterando senha...' : 'Alterar senha'}</span>
@@ -522,16 +527,16 @@ export default function ConfiguracoesPage() {
               </div>
             </form>
           </div>
-        )}
+            )}
 
-        {/* Conteúdo da aba de obras */}
-        {activeTab === 'obras' && (
-          <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold">Cadastro de Obra</h2>
+            {/* Conteúdo da seção Cadastro de obra e usuários */}
+            {sectionAtiva === 'obras' && (
+          <div className="p-4 md:p-6">
+            <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center mb-6">
+              <h2 className="text-lg md:text-xl font-semibold">Cadastro de Obra</h2>
               <button
                 onClick={handleNovaObra}
-                className="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center gap-2"
+                className="w-full md:w-auto min-h-[48px] md:min-h-0 py-3 md:py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center justify-center gap-2 active:bg-blue-800"
               >
                 <PlusCircle size={18} />
                 <span>Nova Obra</span>
@@ -554,8 +559,8 @@ export default function ConfiguracoesPage() {
             ) : (
               <div className="space-y-4">
                 {obras.map((obra) => (
-                  <div key={obra.id} className="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
-                    <h3 className="text-lg font-medium text-gray-900">{obra.nome}</h3>
+                  <div key={obra.id} className="bg-white border rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <h3 className="text-base md:text-lg font-medium text-gray-900">{obra.nome}</h3>
                     <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
                       <div>
                         <span className="text-sm text-gray-500">Endereço:</span>
@@ -609,19 +614,19 @@ export default function ConfiguracoesPage() {
               </div>
             )}
           </div>
-        )}
+            )}
 
-        {/* Conteúdo da aba de usuários e permissões */}
-        {activeTab === 'usuarios' && roleUsuarioAtual === 'admin' && (
-          <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
+            {/* Conteúdo da seção Permissões */}
+            {sectionAtiva === 'usuarios' && roleUsuarioAtual === 'admin' && (
+          <div className="p-4 md:p-6">
+            <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center mb-6">
               <div>
-                <h2 className="text-xl font-semibold">Usuários e Permissões</h2>
-                <p className="text-sm text-gray-500 mt-1">Gerencie os usuários e permissões da sua empresa</p>
+                <h2 className="text-lg md:text-xl font-semibold">Usuários e Permissões</h2>
+                <p className="text-sm text-gray-500 mt-1">Gerencie os usuários e permissões por módulo da sua empresa</p>
               </div>
               <button
                 onClick={() => setModalConvidarUsuario(true)}
-                className="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center gap-2"
+                className="w-full md:w-auto min-h-[48px] md:min-h-0 py-3 md:py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center justify-center gap-2 active:bg-blue-800"
               >
                 <PlusCircle size={18} />
                 <span>Convidar Usuário</span>
@@ -638,123 +643,93 @@ export default function ConfiguracoesPage() {
                 <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum usuário encontrado</h3>
                 <p className="text-gray-500 mb-4">
-                  Você ainda não tem usuários cadastrados. Clique em "Convidar Usuário" para começar.
+                  Você ainda não tem usuários cadastrados. Clique em &quot;Convidar Usuário&quot; para começar.
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {usuarios.map((usuario) => (
-                  <div 
-                    key={usuario.id} 
-                    className="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                            <span className="text-blue-600 font-semibold">
-                              {usuario.nome.charAt(0).toUpperCase()}
+              <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Usuário</th>
+                        <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden sm:table-cell">Cargo</th>
+                        <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Perfil</th>
+                        <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden md:table-cell">Último acesso</th>
+                        <th className="py-3 px-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {usuarios.map((usuario) => (
+                        <tr key={usuario.id} className="hover:bg-gray-50/50">
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                <span className="text-blue-600 font-semibold">{usuario.nome.charAt(0).toUpperCase()}</span>
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-gray-900">{usuario.nome}</span>
+                                  {usuario.id === user?.id && (
+                                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Você</span>
+                                  )}
+                                  {!usuario.ativo && (
+                                    <span className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded">Inativo</span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1.5 text-sm text-gray-500 mt-0.5">
+                                  <Mail size={14} className="shrink-0" />
+                                  {usuario.email}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-600 hidden sm:table-cell">{usuario.cargo || '—'}</td>
+                          <td className="py-3 px-4">
+                            <span className={`inline-flex text-xs font-medium px-2.5 py-1 rounded-full ${getRoleBadgeColor(usuario.role)}`}>
+                              {getRoleLabel(usuario.role)}
                             </span>
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className="text-lg font-medium text-gray-900">{usuario.nome}</h3>
-                              {usuario.id === user?.id && (
-                                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Você</span>
-                              )}
-                              {!usuario.ativo && (
-                                <span className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded">Inativo</span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Mail size={14} className="text-gray-400" />
-                              <p className="text-sm text-gray-600">{usuario.email}</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="ml-13 mt-3 flex flex-wrap items-center gap-4">
-                          <div className="flex items-center gap-2">
-                            <Shield size={14} className="text-gray-400" />
-                            <span className="text-sm text-gray-500">Permissão:</span>
-                            {editandoUsuario?.id === usuario.id ? (
-                              <select
-                                value={editandoUsuario.role}
-                                onChange={(e) => setEditandoUsuario({
-                                  ...editandoUsuario,
-                                  role: e.target.value as 'admin' | 'membro' | 'visualizador'
-                                })}
-                                className="text-sm border rounded px-2 py-1"
-                                onBlur={() => {
-                                  if (editandoUsuario.role !== usuario.role) {
-                                    handleAlterarRole(usuario.id, editandoUsuario.role);
-                                  } else {
-                                    setEditandoUsuario(null);
-                                  }
-                                }}
-                                autoFocus
-                              >
-                                <option value="admin">Administrador</option>
-                                <option value="membro">Membro</option>
-                                <option value="visualizador">Visualizador</option>
-                              </select>
-                            ) : (
-                              <>
-                                <span className={`text-xs px-2 py-1 rounded ${getRoleBadgeColor(usuario.role)}`}>
-                                  {getRoleLabel(usuario.role)}
-                                </span>
-                                {usuario.id !== user?.id && (
-                                  <button
-                                    onClick={() => setEditandoUsuario(usuario)}
-                                    className="text-blue-600 hover:text-blue-700"
-                                    title="Editar permissão"
-                                  >
-                                    <Edit2 size={14} />
-                                  </button>
-                                )}
-                              </>
+                            {usuario.permissoes && Object.keys(usuario.permissoes).length > 0 && (
+                              <span className="ml-1 text-xs text-gray-400" title="Permissões personalizadas">• custom</span>
                             )}
-                          </div>
-
-                          {usuario.cargo && (
-                            <div>
-                              <span className="text-sm text-gray-500">Cargo: </span>
-                              <span className="text-sm text-gray-700">{usuario.cargo}</span>
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-500 hidden md:table-cell">
+                            {usuario.ultimo_acesso
+                              ? new Date(usuario.ultimo_acesso).toLocaleDateString('pt-BR')
+                              : '—'}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                onClick={() => setUsuarioPermissoesAberto(usuario)}
+                                className="p-2 rounded-lg text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                title="Editar permissões"
+                              >
+                                <Settings2 size={18} />
+                              </button>
+                              {usuario.id !== user?.id && (
+                                <button
+                                  onClick={() => handleToggleAtivo(usuario.id, usuario.ativo)}
+                                  className={`p-2 rounded-lg transition-colors ${
+                                    usuario.ativo ? 'text-red-600 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'
+                                  }`}
+                                  title={usuario.ativo ? 'Desativar usuário' : 'Ativar usuário'}
+                                >
+                                  {usuario.ativo ? <UserX size={18} /> : <UserCheck size={18} />}
+                                </button>
+                              )}
                             </div>
-                          )}
-
-                          {usuario.ultimo_acesso && (
-                            <div>
-                              <span className="text-sm text-gray-500">Último acesso: </span>
-                              <span className="text-sm text-gray-700">
-                                {new Date(usuario.ultimo_acesso).toLocaleDateString('pt-BR')}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 ml-4">
-                        {usuario.id !== user?.id && (
-                          <button
-                            onClick={() => handleToggleAtivo(usuario.id, usuario.ativo)}
-                            className={`p-2 rounded-md transition-colors ${
-                              usuario.ativo
-                                ? 'text-red-600 hover:bg-red-50'
-                                : 'text-green-600 hover:bg-green-50'
-                            }`}
-                            title={usuario.ativo ? 'Desativar usuário' : 'Ativar usuário'}
-                          >
-                            {usuario.ativo ? <UserX size={18} /> : <UserCheck size={18} />}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </div>
+            )}
+        </>
         )}
       </div>
 
@@ -812,7 +787,7 @@ export default function ConfiguracoesPage() {
                   value={emailConvite}
                   onChange={(e) => setEmailConvite(e.target.value)}
                   placeholder="usuario@exemplo.com"
-                  className="block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                  className="block w-full min-h-[48px] md:min-h-0 rounded-lg border border-gray-300 py-2.5 md:py-2 px-3 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 text-base"
                   required
                 />
               </div>
@@ -825,16 +800,14 @@ export default function ConfiguracoesPage() {
                   id="roleConvite"
                   value={roleConvite}
                   onChange={(e) => setRoleConvite(e.target.value as 'admin' | 'membro' | 'visualizador')}
-                  className="block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                  className="block w-full min-h-[48px] md:min-h-0 rounded-lg border border-gray-300 py-2.5 md:py-2 px-3 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 text-base"
                 >
-                  <option value="visualizador">Visualizador - Apenas visualização</option>
-                  <option value="membro">Membro - Visualização e edição</option>
-                  <option value="admin">Administrador - Acesso total</option>
+                  {ROLES.map((r) => (
+                    <option key={r.value} value={r.value}>{r.label} – {r.description}</option>
+                  ))}
                 </select>
                 <p className="mt-1 text-xs text-gray-500">
-                  {roleConvite === 'visualizador' && 'Pode apenas visualizar dados'}
-                  {roleConvite === 'membro' && 'Pode visualizar e editar dados'}
-                  {roleConvite === 'admin' && 'Acesso completo, incluindo gerenciamento de usuários'}
+                  {ROLES.find((r) => r.value === roleConvite)?.description}
                 </p>
               </div>
 
@@ -844,21 +817,21 @@ export default function ConfiguracoesPage() {
                 </p>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4">
+              <div className="flex flex-col-reverse gap-3 md:flex-row md:justify-end pt-4">
                 <button
                   onClick={() => {
                     setModalConvidarUsuario(false);
                     setEmailConvite('');
                     setRoleConvite('membro');
                   }}
-                  className="py-2 px-4 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50"
+                  className="w-full md:w-auto min-h-[48px] md:min-h-0 py-3 md:py-2 px-4 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 active:bg-gray-100"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleConvidarUsuario}
                   disabled={carregando || !emailConvite}
-                  className="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center space-x-2 disabled:opacity-70"
+                  className="w-full md:w-auto min-h-[48px] md:min-h-0 py-3 md:py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center justify-center space-x-2 disabled:opacity-70 active:bg-blue-800"
                 >
                   {carregando && <Loader2 className="w-4 h-4 animate-spin" />}
                   <span>{carregando ? 'Enviando...' : 'Enviar Convite'}</span>
@@ -867,6 +840,19 @@ export default function ConfiguracoesPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal de permissões do usuário */}
+      {usuarioPermissoesAberto && (
+        <ModalPermissoesUsuario
+          usuario={{
+            ...usuarioPermissoesAberto,
+            permissoes: usuarioPermissoesAberto.permissoes ?? null,
+          }}
+          onSalvar={handleSalvarPermissoes}
+          onFechar={() => setUsuarioPermissoesAberto(null)}
+          carregando={carregando}
+        />
       )}
     </div>
   );

@@ -183,45 +183,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Função de logout
   const signOut = async () => {
+    const userId = user?.id;
     try {
       console.log('Fazendo logout...');
-      const userId = user?.id;
-      
-      // Primeiro, limpar estado local imediatamente
-      setSession(null);
-      setUser(null);
-      
-      // Tentar logout do Supabase
-      await supabase.auth.signOut();
 
-      // Garantir limpeza de cookies no servidor (middleware/SSR)
+      // 1) Primeiro: limpar sessão no servidor e expirar cookies (resposta com Set-Cookie)
+      //    Assim, ao redirecionar para /login, o middleware já não verá sessão válida.
       try {
         await fetch('/api/logout', {
           method: 'POST',
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId }),
         });
       } catch (error) {
         console.warn('Falha ao chamar /api/logout (seguindo com logout local):', error);
       }
-      
-      // Limpar storage após logout
+
+      // 2) Limpar estado local e sessão no cliente
+      setSession(null);
+      setUser(null);
+      await supabase.auth.signOut();
+
+      // 3) Limpar storage (localStorage e cookies no cliente)
       clearAllAuthData();
-      
+
       console.log('Logout realizado com sucesso');
-      
-      // Redirecionar para login
+
+      // 4) Redirecionar só após garantir que a API já enviou os cookies expirados
       window.location.href = '/login';
-      
     } catch (error) {
       console.warn('Erro no logout do servidor, executando logout local:', error);
-      
-      // Força o logout limpando tudo localmente
       setSession(null);
       setUser(null);
       clearAllAuthData();
-      
-      // Redirecionar para login
       window.location.href = '/login';
     }
   };

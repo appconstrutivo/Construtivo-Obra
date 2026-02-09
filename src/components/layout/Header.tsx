@@ -21,7 +21,8 @@ const routeTitles: Record<string, string> = {
   '/negociacoes': 'Contratos',
   '/fornecedores': 'Fornecedores',
   '/relatorios': 'Relatórios',
-  '/plano': 'Planos de Assinatura'
+  '/plano': 'Planos de Assinatura',
+  '/configuracoes': 'Configurações'
 };
 
 export default function Header() {

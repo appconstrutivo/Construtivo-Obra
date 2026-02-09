@@ -1894,7 +1894,8 @@ export async function updateMedicao(
   data_inicio: string,
   data_fim: string,
   status?: string,
-  desconto?: number
+  desconto?: number,
+  observacao?: string
 ) {
   try {
     console.log('📋 Iniciando atualização da medição:', id, status ? `-> ${status}` : '');
@@ -1911,6 +1912,10 @@ export async function updateMedicao(
 
     if (desconto !== undefined) {
       updateData.desconto = desconto;
+    }
+
+    if (observacao !== undefined) {
+      updateData.observacao = observacao;
     }
 
     // Atualizar a medição

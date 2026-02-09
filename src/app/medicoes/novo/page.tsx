@@ -285,27 +285,28 @@ export default function NovaMedicaoPage() {
   };
   
   return (
-    <main className="flex-1 overflow-auto p-6">
-      <div className="flex items-center mb-6">
-        <Link 
-          href="/medicoes" 
-          className="mr-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
+    <main className="flex-1 overflow-auto p-4 md:p-6">
+      <div className="flex items-center gap-3 mb-6">
+        <Link
+          href="/medicoes"
+          className="p-2.5 rounded-full hover:bg-gray-100 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center md:min-h-0 md:min-w-0 md:mr-4 md:p-2"
+          aria-label="Voltar"
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={22} className="md:w-5 md:h-5" />
         </Link>
-        <h1 className="text-2xl font-bold">NOVA MEDIÇÃO</h1>
+        <h1 className="text-xl font-bold md:text-2xl">NOVA MEDIÇÃO</h1>
       </div>
-      
+
       <form onSubmit={handleSubmit}>
-        <div className="bg-white shadow-sm rounded-lg overflow-hidden mb-6 p-6">
-          <h2 className="text-lg font-medium mb-4">Informações da Medição</h2>
-          
-          <div className="mb-6">
+        <div className="bg-white shadow-sm rounded-xl overflow-hidden mb-6 p-4 md:p-6">
+          <h2 className="text-base font-medium mb-4 md:text-lg">Informações da Medição</h2>
+
+          <div className="mb-4 md:mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Contrato / Negociação*
             </label>
             <select
-              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 md:p-2 min-h-[48px] md:min-h-0 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
               value={negociacaoId || ''}
               onChange={handleNegociacaoChange}
               required
@@ -318,7 +319,7 @@ export default function NovaMedicaoPage() {
               ))}
             </select>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -326,7 +327,7 @@ export default function NovaMedicaoPage() {
               </label>
               <input
                 type="date"
-                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 md:p-2 min-h-[48px] md:min-h-0 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                 value={dataInicio}
                 onChange={(e) => setDataInicio(e.target.value)}
                 required
@@ -338,14 +339,14 @@ export default function NovaMedicaoPage() {
               </label>
               <input
                 type="date"
-                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 md:p-2 min-h-[48px] md:min-h-0 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                 value={dataFim}
                 onChange={(e) => setDataFim(e.target.value)}
                 required
               />
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -355,7 +356,7 @@ export default function NovaMedicaoPage() {
                 type="number"
                 step="0.01"
                 min="0"
-                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 md:p-2 min-h-[48px] md:min-h-0 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                 value={desconto}
                 onChange={(e) => setDesconto(parseFloat(e.target.value) || 0)}
               />
@@ -365,7 +366,7 @@ export default function NovaMedicaoPage() {
                 Observação
               </label>
               <textarea
-                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 md:p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base min-h-[100px] md:min-h-0"
                 rows={3}
                 value={observacao}
                 onChange={(e) => setObservacao(e.target.value)}
@@ -377,10 +378,62 @@ export default function NovaMedicaoPage() {
         
         {negociacaoSelecionada && (
           <>
-            <div className="bg-white shadow-sm rounded-lg overflow-hidden mb-6">
-              <h2 className="text-lg font-medium p-6 pb-3 border-b">Itens Disponíveis</h2>
-              
-              <div className="overflow-x-auto">
+            <div className="bg-white shadow-sm rounded-xl overflow-hidden mb-6">
+              <h2 className="text-base font-medium p-4 md:p-6 pb-3 border-b md:text-lg">Itens Disponíveis</h2>
+
+              {/* Lista em cards — apenas mobile */}
+              <div className="md:hidden p-4 space-y-3">
+                {itensDisponiveis.length === 0 ? (
+                  <p className="text-center text-gray-500 text-sm py-4">Nenhum item disponível nesta negociação</p>
+                ) : (
+                  itensDisponiveis.map((item) => (
+                    <div
+                      key={item.id}
+                      className={`border rounded-xl p-4 ${item.totalmente_medido ? 'bg-gray-50 opacity-75' : 'border-gray-100'}`}
+                    >
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-gray-900 text-sm">{item.descricao}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {item.quantidade} {item.unidade} · {formatarValor(item.valor_unitario)}/un
+                          </p>
+                          {item.quantidade_ja_medida != null && item.quantidade_ja_medida > 0 && (
+                            <p className="text-xs text-gray-600 mt-1">
+                              Já medido: {item.quantidade_ja_medida} {item.unidade}
+                              {!item.totalmente_medido && item.quantidade_disponivel != null && (
+                                <> · Disp.: {item.quantidade_disponivel}</>
+                              )}
+                            </p>
+                          )}
+                          {item.totalmente_medido && (
+                            <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full">
+                              100% EXECUTADO
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex-shrink-0">
+                          {item.totalmente_medido ? (
+                            <span className="text-gray-400 text-sm">—</span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleAdicionarItem(item)}
+                              disabled={itensSelecionados.some(i => i.id === item.id)}
+                              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-blue-100 text-blue-700 font-semibold text-lg hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                              aria-label="Adicionar à medição"
+                            >
+                              +
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Tabela — apenas desktop */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="bg-gray-50 text-left">
@@ -459,16 +512,62 @@ export default function NovaMedicaoPage() {
                 </table>
               </div>
             </div>
-            
-            <div className="bg-white shadow-sm rounded-lg overflow-hidden mb-6">
-              <h2 className="text-lg font-medium p-6 pb-3 border-b">Itens da Medição</h2>
-              
+
+            <div className="bg-white shadow-sm rounded-xl overflow-hidden mb-6">
+              <h2 className="text-base font-medium p-4 md:p-6 pb-3 border-b md:text-lg">Itens da Medição</h2>
+
               {itensSelecionados.length === 0 ? (
-                <p className="p-6 text-center text-gray-500">
+                <p className="p-4 md:p-6 text-center text-gray-500 text-sm">
                   Nenhum item adicionado à medição. Adicione itens da lista acima.
                 </p>
               ) : (
-                <div className="overflow-x-auto">
+                <>
+                  {/* Lista em cards — apenas mobile */}
+                  <div className="md:hidden p-4 space-y-4">
+                    {itensSelecionados.map((item) => (
+                      <div key={item.id} className="border border-gray-100 rounded-xl p-4">
+                        <p className="font-medium text-gray-900 text-sm mb-2">{item.descricao}</p>
+                        <div className="flex flex-wrap gap-3 text-xs text-gray-600 mb-3">
+                          <span>{item.quantidade} {item.unidade} total</span>
+                          <span>{formatarValor(item.valor_unitario)}/un</span>
+                        </div>
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <label className="text-sm font-medium text-gray-700">Qtd a medir:</label>
+                          <input
+                            type="number"
+                            className="w-24 p-2.5 min-h-[44px] border border-gray-300 rounded-lg text-base"
+                            value={quantidadesAMedir[item.id] || 0}
+                            onChange={(e) => handleQuantidadeChange(item.id, Number(e.target.value))}
+                            min="0"
+                            max={item.quantidade_disponivel || item.quantidade}
+                            step="0.001"
+                          />
+                          <span className="text-sm text-gray-600">
+                            {calcularPercentualExecutado(item.id).toFixed(1)}% · {formatarValor(calcularValorTotal(item.id))}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoverItem(item.id)}
+                            className="ml-auto min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-red-600 hover:bg-red-50"
+                            aria-label="Remover item"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    <div className="pt-3 border-t border-gray-100 font-medium text-gray-900">
+                      Total da Medição: {formatarValor(calcularTotalMedicao())}
+                    </div>
+                    {desconto > 0 && (
+                      <div className="text-sm text-red-600">
+                        Desconto: -{formatarValor(desconto)} · Total com desconto: {formatarValor(calcularTotalComDesconto())}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Tabela — apenas desktop */}
+                  <div className="hidden md:block overflow-x-auto">
                   <table className="w-full">
                     <thead>
                       <tr className="bg-gray-50 text-left">
@@ -555,21 +654,20 @@ export default function NovaMedicaoPage() {
                       )}
                     </tfoot>
                   </table>
-                </div>
+                  </div>
+                </>
               )}
             </div>
           </>
         )}
         
         {/* Seção de Previsão de Desembolso */}
-        <div className="bg-white shadow-sm rounded-lg overflow-hidden mb-6 p-6">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-4">
-              <h2 className="text-lg font-semibold">Previsão de Desembolso</h2>
-              <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">Opcional</span>
-            </div>
+        <div className="bg-white shadow-sm rounded-xl overflow-hidden mb-6 p-4 md:p-6">
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <h2 className="text-base font-semibold md:text-lg">Previsão de Desembolso</h2>
+            <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">Opcional</span>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
               <label htmlFor="data-parcela" className="block text-sm font-medium text-gray-700 mb-1">
@@ -578,12 +676,12 @@ export default function NovaMedicaoPage() {
               <input
                 type="date"
                 id="data-parcela"
-                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 md:p-2 min-h-[48px] md:min-h-0 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                 value={parcelaForm.data_prevista}
                 onChange={(e) => setParcelaForm(prev => ({ ...prev, data_prevista: e.target.value }))}
               />
             </div>
-            
+
             <div>
               <label htmlFor="valor-parcela" className="block text-sm font-medium text-gray-700 mb-1">
                 Valor (R$)
@@ -593,21 +691,21 @@ export default function NovaMedicaoPage() {
                 id="valor-parcela"
                 min="0"
                 step="any"
-                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 md:p-2 min-h-[48px] md:min-h-0 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                 value={parcelaForm.valor || ''}
                 onChange={(e) => setParcelaForm(prev => ({ ...prev, valor: parseFloat(e.target.value) || 0 }))}
               />
             </div>
-            
+
             <div>
               <label htmlFor="descricao-parcela" className="block text-sm font-medium text-gray-700 mb-1">
                 Descrição (opcional)
               </label>
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2 md:flex-row md:gap-2">
                 <input
                   type="text"
                   id="descricao-parcela"
-                  className="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 p-3 md:p-2 min-h-[48px] md:min-h-0 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                   value={parcelaForm.descricao}
                   onChange={(e) => setParcelaForm(prev => ({ ...prev, descricao: e.target.value }))}
                   placeholder="Ex: Entrada, 1ª parcela, etc."
@@ -615,15 +713,48 @@ export default function NovaMedicaoPage() {
                 <button
                   type="button"
                   onClick={adicionarParcela}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
+                  className="min-h-[48px] md:min-h-0 px-4 py-3 md:py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium"
                 >
-                  +
+                  Adicionar parcela
                 </button>
               </div>
             </div>
           </div>
-          
-          <div className="overflow-x-auto">
+
+          {/* Lista de parcelas em cards — apenas mobile */}
+          <div className="md:hidden space-y-3 mb-4">
+            {parcelas.length === 0 ? (
+              <p className="text-sm text-gray-500 py-2">Nenhuma parcela adicionada</p>
+            ) : (
+              parcelas.map((parcela, index) => (
+                <div key={index} className="flex items-center justify-between gap-2 border border-gray-100 rounded-xl p-3">
+                  <div>
+                    <p className="font-medium text-gray-900">{formatarData(parcela.data_prevista)}</p>
+                    <p className="text-sm text-gray-600">{parcela.descricao || '—'}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-gray-900">{parcela.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                    <button
+                      type="button"
+                      className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-lg text-red-600 hover:bg-red-50"
+                      onClick={() => removerParcela(index)}
+                      aria-label="Remover parcela"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+            {parcelas.length > 0 && (
+              <p className="text-sm font-semibold text-gray-900 pt-2 border-t border-gray-100">
+                Total das parcelas: {formatarValor(calcularTotalParcelas())}
+              </p>
+            )}
+          </div>
+
+          {/* Tabela de parcelas — apenas desktop */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -686,21 +817,21 @@ export default function NovaMedicaoPage() {
             </table>
           </div>
         </div>
-        
-        <div className="flex justify-end mt-6 space-x-4">
-          <Link 
-            href="/medicoes" 
-            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors flex items-center gap-2"
+
+        <div className="flex flex-col gap-3 mt-6 md:flex-row md:justify-end md:space-x-4 md:gap-0">
+          <Link
+            href="/medicoes"
+            className="w-full md:w-auto min-h-[48px] md:min-h-0 px-4 py-3 md:py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors flex items-center justify-center gap-2 font-medium"
           >
-            <ArrowLeft size={16} />
+            <ArrowLeft size={18} />
             <span>Cancelar</span>
           </Link>
           <button
             type="submit"
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors flex items-center gap-2"
+            className="w-full md:w-auto min-h-[48px] md:min-h-0 px-4 py-3 md:py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-70"
             disabled={salvando}
           >
-            <Save size={16} />
+            <Save size={18} />
             <span>{salvando ? 'Salvando...' : 'Salvar Medição'}</span>
           </button>
         </div>
