@@ -1,11 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 
+const QUANTIDADES_OBRAS_VALIDAS = [1, 2, 3, 4, 5, 10, 15];
+
 export default function Cadastro() {
+  const searchParams = useSearchParams();
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
@@ -15,6 +18,46 @@ export default function Cadastro() {
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const router = useRouter();
+
+  const paramsCakto = useMemo(() => {
+    const transaction_id = searchParams.get('transaction_id') ?? undefined;
+    const plan_id = searchParams.get('plan_id') ?? undefined;
+    let quantidade_obras: number | undefined =
+      searchParams.get('quantidade_obras') != null
+        ? parseInt(searchParams.get('quantidade_obras')!, 10)
+        : undefined;
+    if (
+      quantidade_obras == null &&
+      plan_id &&
+      /^obra-\d+$/.test(plan_id)
+    ) {
+      const n = parseInt(plan_id.replace('obra-', ''), 10);
+      if (QUANTIDADES_OBRAS_VALIDAS.includes(n)) quantidade_obras = n;
+    }
+    const emailParam = searchParams.get('email') ?? undefined;
+    const test_mode = searchParams.get('test_mode') ?? undefined;
+    const isValidQtd =
+      quantidade_obras != null &&
+      Number.isInteger(quantidade_obras) &&
+      QUANTIDADES_OBRAS_VALIDAS.includes(quantidade_obras);
+    return {
+      transaction_id,
+      plan_id,
+      quantidade_obras: isValidQtd ? quantidade_obras : undefined,
+      email: emailParam && emailParam.trim() ? emailParam.trim() : undefined,
+      test_mode: test_mode === 'true',
+      isFluxoCakto:
+        (Boolean(transaction_id) || Boolean(plan_id)) && isValidQtd,
+    };
+  }, [searchParams]);
+
+  const emailPreenchidoRef = useRef(false);
+  useEffect(() => {
+    if (paramsCakto.email && !emailPreenchidoRef.current) {
+      setEmail(paramsCakto.email);
+      emailPreenchidoRef.current = true;
+    }
+  }, [paramsCakto.email]);
 
   const handleCadastro = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,23 +77,52 @@ export default function Cadastro() {
     }
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password: senha,
         options: {
           data: {
             nome,
             empresa,
-            cargo
-          }
-        }
+            cargo,
+          },
+        },
       });
 
       if (error) {
         throw error;
       }
 
-      // Redirecionar para página de confirmação
+      if (
+        paramsCakto.isFluxoCakto &&
+        data?.user?.id &&
+        paramsCakto.quantidade_obras != null
+      ) {
+        const res = await fetch('/api/cadastro-cakto', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: data.user.id,
+            nome: nome.trim() || undefined,
+            email,
+            empresa: empresa.trim() || undefined,
+            transaction_id: paramsCakto.transaction_id,
+            quantidade_obras: paramsCakto.quantidade_obras,
+            test_mode: paramsCakto.test_mode ? 'true' : undefined,
+          }),
+        });
+
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setErro(
+            json?.error ||
+              'Erro ao ativar plano. Sua conta foi criada; entre em contato com o suporte.'
+          );
+          setCarregando(false);
+          return;
+        }
+      }
+
       router.push('/cadastro/confirmacao');
     } catch (error: any) {
       setErro(error.message || 'Erro ao criar conta');
@@ -86,6 +158,12 @@ export default function Cadastro() {
           <div className="mx-auto w-12 h-1 rounded-full bg-gray-200 mb-6 md:hidden" aria-hidden />
           <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-1 md:mb-2">Criar uma conta</h2>
           <p className="text-gray-600 mb-6 md:mb-8">Preencha os dados para se cadastrar</p>
+
+          {paramsCakto.isFluxoCakto && paramsCakto.quantidade_obras != null && (
+            <div className="bg-blue-50 text-blue-800 text-sm p-3 rounded-lg mb-4">
+              Plano com <strong>{paramsCakto.quantidade_obras} {paramsCakto.quantidade_obras === 1 ? 'obra' : 'obras'}</strong> será ativado após a confirmação do seu email.
+            </div>
+          )}
 
           {erro && (
             <div className="bg-red-50 text-red-700 p-3 rounded mb-4 text-sm">

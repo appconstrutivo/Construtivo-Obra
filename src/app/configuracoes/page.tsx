@@ -48,6 +48,7 @@ export default function ConfiguracoesPage() {
   const [carregandoUsuarios, setCarregandoUsuarios] = useState(false);
   const [roleUsuarioAtual, setRoleUsuarioAtual] = useState<'admin' | 'membro' | 'visualizador' | null>(null);
   const [empresaId, setEmpresaId] = useState<number | null>(null);
+  const [dadosUsuarioCarregados, setDadosUsuarioCarregados] = useState(false);
   const [modalConvidarUsuario, setModalConvidarUsuario] = useState(false);
   const [emailConvite, setEmailConvite] = useState('');
   const [roleConvite, setRoleConvite] = useState<'admin' | 'membro' | 'visualizador'>('membro');
@@ -85,6 +86,8 @@ export default function ConfiguracoesPage() {
       }
     } catch (error) {
       console.error('Erro ao carregar dados do usuário:', error);
+    } finally {
+      setDadosUsuarioCarregados(true);
     }
   };
 
@@ -183,7 +186,10 @@ export default function ConfiguracoesPage() {
 
       if (usuarioError || !usuario?.empresa_id) {
         console.error('Erro ao buscar dados do usuário:', usuarioError);
-        setMensagem({ tipo: 'erro', texto: 'Erro ao verificar permissões. Tente novamente.' });
+        setMensagem({
+          tipo: 'erro',
+          texto: 'Sua conta não está vinculada a uma empresa. Se você assinou um plano pela landing, use o link de cadastro enviado após o pagamento. Caso contrário, entre em contato com o suporte.',
+        });
         return;
       }
 
@@ -397,6 +403,19 @@ export default function ConfiguracoesPage() {
           </div>
         )}
 
+        {dadosUsuarioCarregados && empresaId == null && user ? (
+          <div className="p-4 md:p-6">
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-medium text-amber-900">Conta não vinculada a uma empresa</h3>
+                <p className="mt-1 text-sm text-amber-800">
+                  Sua conta ainda não está vinculada a uma empresa. Para cadastrar obras e gerenciar usuários, é necessário concluir o cadastro pelo link enviado após a assinatura do plano na landing (Cakto). Se você já assinou e não recebeu o link, ou se acredita que isso é um erro, entre em contato com o suporte.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : null}
         {exibirCards ? (
           /* Vista de cards das seções */
           <div className="p-4 md:p-6">
