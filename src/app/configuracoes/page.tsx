@@ -260,12 +260,25 @@ export default function ConfiguracoesPage() {
       if (usuarioError || !usuario?.empresa_id) {
         throw new Error('Erro ao obter empresa_id do usuário');
       }
-      
+
+      // Campos date não aceitam string vazia no Postgres: enviar null quando vazio
+      const dataInicio = formData.data_inicio?.trim() ? formData.data_inicio : null;
+      const dataPrevistaFim = formData.data_prevista_fim?.trim() ? formData.data_prevista_fim : null;
+
       const { data, error } = await supabase
         .from('obras')
         .insert([
           {
-            ...formData,
+            nome: formData.nome,
+            endereco: formData.endereco || null,
+            responsavel_tecnico: formData.responsavel_tecnico || null,
+            crea: formData.crea || null,
+            data_inicio: dataInicio,
+            data_prevista_fim: dataPrevistaFim,
+            area_construida: formData.area_construida ?? null,
+            status: formData.status || null,
+            observacoes: formData.observacoes || null,
+            cliente: formData.cliente || null,
             usuario_id: user.id,
             empresa_id: usuario.empresa_id,
             orcamento_total: 0 // Mantendo compatibilidade com o banco de dados
