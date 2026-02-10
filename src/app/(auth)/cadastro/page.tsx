@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { Suspense, useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 
 const QUANTIDADES_OBRAS_VALIDAS = [1, 2, 3, 4, 5, 10, 15];
 
-export default function Cadastro() {
+function CadastroContent() {
   const searchParams = useSearchParams();
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
@@ -288,5 +288,23 @@ export default function Cadastro() {
         </div>
       </div>
     </div>
+  );
+}
+
+function CadastroFallback() {
+  return (
+    <div className="min-h-screen min-h-dvh flex flex-col md:flex-row md:items-center md:justify-center bg-gradient-to-br from-blue-900 to-blue-800 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+      <div className="flex flex-col md:flex-row w-full max-w-4xl flex-1 md:flex-initial items-center justify-center p-8">
+        <div className="text-white text-lg">Carregando...</div>
+      </div>
+    </div>
+  );
+}
+
+export default function Cadastro() {
+  return (
+    <Suspense fallback={<CadastroFallback />}>
+      <CadastroContent />
+    </Suspense>
   );
 } 
