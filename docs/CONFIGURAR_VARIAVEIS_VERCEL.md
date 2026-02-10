@@ -19,6 +19,7 @@ O projeto precisa das seguintes variáveis de ambiente:
 2. `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Chave anônima (pública) do Supabase
 3. `SUPABASE_SERVICE_ROLE_KEY` - Chave de serviço (secreta) do Supabase
 4. `NEXT_PUBLIC_APP_URL` - URL da aplicação (opcional, mas recomendado)
+5. **Cakto (opcional, para validar pagamento no cadastro):** `CAKTO_CLIENT_ID`, `CAKTO_CLIENT_SECRET` — ver [CONFIGURAR_CAKTO_VERCEL.md](./CONFIGURAR_CAKTO_VERCEL.md).
 
 ---
 

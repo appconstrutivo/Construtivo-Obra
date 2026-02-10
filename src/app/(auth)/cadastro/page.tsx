@@ -20,7 +20,12 @@ function CadastroContent() {
   const router = useRouter();
 
   const paramsCakto = useMemo(() => {
-    const transaction_id = searchParams.get('transaction_id') ?? undefined;
+    // Cakto pode enviar o ID da transação com nomes diferentes no redirect
+    const transaction_id =
+      searchParams.get('transaction_id') ??
+      searchParams.get('order_id') ??
+      searchParams.get('payment_id') ??
+      undefined;
     const plan_id = searchParams.get('plan_id') ?? undefined;
     let quantidade_obras: number | undefined =
       searchParams.get('quantidade_obras') != null

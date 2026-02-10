@@ -53,16 +53,21 @@ export async function POST(request: NextRequest) {
     }
 
     const isTestMode = test_mode === 'true' || test_mode === true;
-    if (!isTestMode && !transaction_id) {
+    const caktoConfigurado = !!(
+      process.env.CAKTO_CLIENT_ID && process.env.CAKTO_CLIENT_SECRET
+    );
+
+    // transaction_id (id do pedido Cakto) obrigatório apenas quando Cakto está configurado.
+    // Sem Cakto configurado, o redirect pode vir só com plan_id + quantidade_obras.
+    if (!isTestMode && !transaction_id && caktoConfigurado) {
       return NextResponse.json(
         { error: 'transaction_id é obrigatório quando test_mode não é true' },
         { status: 400 }
       );
     }
 
-    if (!isTestMode) {
-      // Validação do pagamento na Cakto (em produção, chamar API Cakto)
-      const isValid = await validarTransacaoCakto(transaction_id);
+    if (!isTestMode && transaction_id) {
+      const isValid = await validarPedidoCakto(transaction_id);
       if (!isValid) {
         return NextResponse.json(
           { error: 'Transação não confirmada. Verifique o pagamento.' },
@@ -169,31 +174,55 @@ export async function POST(request: NextRequest) {
   }
 }
 
+const CAKTO_API_BASE = 'https://api.cakto.com.br';
+
 /**
- * Valida a transação na Cakto.
- * Em produção: chamar API Cakto com transaction_id e verificar status aprovado.
- * Por enquanto: stub que aceita qualquer transaction_id (produção deve implementar).
+ * Obtém access_token OAuth2 da Cakto (client_id + client_secret).
+ * Documentação: https://docs.cakto.com.br/authentication
  */
-async function validarTransacaoCakto(_transactionId: string): Promise<boolean> {
-  // TODO: integrar com API Cakto para validar pagamento
-  // Ex.: GET https://api.cakto.com/v1/transactions/{id} e checar status === 'paid'
-  const caktoApiUrl = process.env.CAKTO_API_URL;
-  const caktoApiKey = process.env.CAKTO_API_KEY;
-  if (caktoApiUrl && caktoApiKey) {
-    try {
-      const res = await fetch(
-        `${caktoApiUrl.replace(/\/$/, '')}/transactions/${_transactionId}`,
-        {
-          headers: { Authorization: `Bearer ${caktoApiKey}` },
-        }
-      );
-      if (!res.ok) return false;
-      const data = await res.json();
-      return data?.status === 'paid' || data?.status === 'approved';
-    } catch {
-      return false;
-    }
+async function obterTokenCakto(): Promise<string | null> {
+  const clientId = process.env.CAKTO_CLIENT_ID;
+  const clientSecret = process.env.CAKTO_CLIENT_SECRET;
+  if (!clientId || !clientSecret) return null;
+  try {
+    const res = await fetch(`${CAKTO_API_BASE}/public_api/token/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+      }),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { access_token?: string };
+    return data?.access_token ?? null;
+  } catch {
+    return null;
   }
-  // Sem config Cakto: em produção seria mais seguro rejeitar; por ora aceita para não bloquear
-  return true;
+}
+
+/**
+ * Valida o pedido na Cakto: GET /public_api/orders/{id}/ e verifica status paid ou authorized.
+ * Documentação: https://docs.cakto.com.br/api-reference/orders/retrieve
+ */
+async function validarPedidoCakto(orderId: string): Promise<boolean> {
+  const token = await obterTokenCakto();
+  if (!token) return false;
+  try {
+    const res = await fetch(
+      `${CAKTO_API_BASE}/public_api/orders/${encodeURIComponent(orderId)}/`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    if (!res.ok) return false;
+    const data = (await res.json()) as { status?: string };
+    const status = data?.status?.toLowerCase();
+    return status === 'paid' || status === 'authorized';
+  } catch {
+    return false;
+  }
 }
